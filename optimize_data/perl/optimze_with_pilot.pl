@@ -184,14 +184,14 @@ sub ave_pilot_score {
 	return 100;
 }
 
-#my $ER_FILE="../data/eqpid_recipe.csv";
-my $ER_FILE="./eqpid_recipe_lot_pilot.csv";
+my $ER_FILE="../data/eqpid_recipe.csv";
+#my $ER_FILE="./eqpid_recipe_lot_pilot.csv";
 my %ER_ASSIGN;		  # (EQPID, FLAG, RECIPE) -> [lot,pilot]
 my %EF_COUNT;		  # (EQPID, FLAG) -> [lots,pilots]
 my %HANDLE_ER_ASSIGN; # (EQPID, RECIPE, FLAG) -> [lot,pilot] deault should be %ER_ASSIGN's deep copy
 my %HANDLE_EF_COUNT;  # (EQPID, FLAG) -> [lots,pilots] deault should be %EF_COUNT's deep copy
 #my @EF_COUNT_STORE;   # store %EF_COUNT per ascending order with lots
-my $OP_FLAG = 1;
+my $OP_FLAG = 6;
 my $final_score;      #store the final total score(lot_score+pilot_score)
 my $switch_cnt = 0;   #recore switch count
 sub read_ER_FILE{
@@ -231,6 +231,40 @@ sub read_ER_FILE{
   close(FIN);
 }
 
+##############################################
+#get the lot count on a flag
+##############################################
+sub get_lots_on_flag1{
+  my $FLAG = $_[0];
+  my $lot_cnt = 0;
+  foreach my $E (sort {$a cmp $b} keys %HANDLE_EF_COUNT){
+    foreach my $F (keys %{$HANDLE_EF_COUNT{$E}}){
+      if($F eq $FLAG){
+        $lot_cnt += $HANDLE_EF_COUNT{$E}{$F}[0];
+        #print("$E-$F  $HANDLE_EF_COUNT{$E}{$F}[0]\n");
+      }
+    }
+  }
+  return $lot_cnt;
+}
+
+sub get_lots_on_flag2{
+  my $FLAG = $_[0];
+  my $lot_cnt = 0;
+  foreach my $E (sort {$a cmp $b} keys %HANDLE_ER_ASSIGN){
+    foreach my $F (keys %{$HANDLE_ER_ASSIGN{$E}}){
+      if($F eq $FLAG){
+        foreach my $R (keys %{$HANDLE_ER_ASSIGN{$E}{$F}}){
+          print("$E-$F-$R  $HANDLE_ER_ASSIGN{$E}{$F}{$R}[0]\n");
+          $lot_cnt += $HANDLE_ER_ASSIGN{$E}{$F}{$R}[0];
+        }
+      }
+    }
+  }
+  return $lot_cnt;
+}
+
+
 sub get_EQP_NUM_ON_FLAG{
   my $FLAG = $_[0];
   my $cnt = 0;
@@ -244,6 +278,10 @@ sub get_EQP_NUM_ON_FLAG{
   return $cnt;
 }
 
+
+##############################################
+#get the lot ave of <= flag
+##############################################
 sub get_ave_lot_with_flag{
   my $FLAG = $_[0];
   my $e_cnt = 0;
@@ -258,7 +296,9 @@ sub get_ave_lot_with_flag{
   return $lot_cnt/get_EQP_NUM_ON_FLAG($FLAG);
 }
 
-
+##############################################
+#get all flag's flag score per flag
+##############################################
 sub get_total_lot_score_ON_FLAG{
   my $FLAG = $_[0];
   my $lot_cnt = 0;
@@ -278,6 +318,9 @@ sub get_total_lot_score_ON_FLAG{
   return $score;
 }
 
+##############################################
+#get flag's pilot score per flag
+##############################################
 sub get_total_pilot_score_ON_FLAG{
   my $FLAG = $_[0];
   my $pilot_cnt = 0;
@@ -286,7 +329,7 @@ sub get_total_pilot_score_ON_FLAG{
   foreach my $E (keys %HANDLE_EF_COUNT){
     $pilot_cnt = 0;#static per eqpid
     foreach my $F (keys %{$HANDLE_EF_COUNT{$E}}){
-      if($F <= $FLAG){
+      if($F == $FLAG){
         $pilot_cnt += $HANDLE_EF_COUNT{$E}{$F}[1];
       }
     }
@@ -297,6 +340,9 @@ sub get_total_pilot_score_ON_FLAG{
   return $score;
 }
 
+##########################################################
+#switch recipe between eqpids if the lot&pilot score is smaller then before
+##########################################################
 sub switch_recipe_between_eqpid_on_flag{
   my $E1 = $_[0];
   my $E2 = $_[1];
@@ -329,9 +375,10 @@ sub switch_recipe_between_eqpid_on_flag{
       $HANDLE_EF_COUNT{$E2}{$FLAG}[0] = $HANDLE_EF_COUNT{$E2}{$FLAG}[0]-$ER_ASSIGN{$E2}{$FLAG}{$R_ARRAY2[$j]}[0]+$ER_ASSIGN{$E1}{$FLAG}{$R_ARRAY1[$i]}[0];
       $HANDLE_EF_COUNT{$E2}{$FLAG}[1] = $HANDLE_EF_COUNT{$E2}{$FLAG}[1]-$ER_ASSIGN{$E2}{$FLAG}{$R_ARRAY2[$j]}[1]+$USABLE{$E2}{$R_ARRAY1[$i]} eq "YES"?1:0;
 
-      my $lot_score = get_total_lot_score_ON_FLAG($OP_FLAG);
-      my $pilot_score = get_total_pilot_score_ON_FLAG($OP_FLAG);
+      my $lot_score = get_total_lot_score_ON_FLAG($FLAG);
+      my $pilot_score = get_total_pilot_score_ON_FLAG($FLAG);
       my $tmp_score = $lot_score + $pilot_score;
+      #print("++++lot_score=$lot_score pilot_score=$pilot_score  $E1-$FLAG-$R_ARRAY1[$i]<-->$E2-$FLAG-$R_ARRAY2[$j]\n");
       next if($lot_score > $max_total_lot_score || $pilot_score > $max_total_pilot_score || $tmp_score >= $final_score);
       print("----lot_score=$lot_score pilot_score=$pilot_score  $E1-$FLAG-$R_ARRAY1[$i]<-->$E2-$FLAG-$R_ARRAY2[$j]\n");
 
@@ -349,6 +396,103 @@ sub switch_recipe_between_eqpid_on_flag{
       %EF_COUNT = %{dclone(\%HANDLE_EF_COUNT)};
       %ER_ASSIGN = %{dclone(\%HANDLE_ER_ASSIGN)};
       
+    }
+  }
+}
+
+##########################################################
+#-1:the eqpid's lot < ave,should be input
+# 1:the eqpid's lot > ave+delta,should be output
+# 0:the eqpid's lot ~= ave,should be keep it
+##########################################################
+sub if_need_to_switch_on_eqpid_flag{
+  my $E = $_[0];
+  my $FLAG = $_[1];
+  my $lot_cnt = 0;#static per eqpid
+  my $delta = 2;
+  my $ave = get_ave_lot_with_flag($FLAG);
+  foreach my $F (keys %{$HANDLE_EF_COUNT{$E}}){
+    if($F <= $FLAG){
+      $lot_cnt += $HANDLE_EF_COUNT{$E}{$F}[0];
+    }
+  }
+
+  if($lot_cnt<($ave)){
+    return -1;
+  }elsif($lot_cnt>($ave+$delta)){
+    return 1;
+  }else{
+    return 0;
+  }
+}
+
+##########################################################
+#switch recipe between eqpids if the lot&pilot score is smaller then before and reach if_need_to_switch_on_eqpid_flag
+##########################################################
+sub switch_recipe_between_eqpid_to_ave{
+  my $E1 = $_[0];
+  my $E2 = $_[1];
+  my $FLAG = $_[2];
+  my @R_ARRAY1;
+  my @R_ARRAY2;
+  foreach my $R (keys %{$ER_ASSIGN{$E1}{$FLAG}}){
+    push(@R_ARRAY1,$R);
+  }
+  foreach my $R (keys %{$ER_ASSIGN{$E2}{$FLAG}}){
+    push(@R_ARRAY2,$R);
+  }
+  #print("@R_ARRAY1\n");
+  #print("@R_ARRAY2\n");
+
+  if(if_need_to_switch_on_eqpid_flag($E1,$FLAG)==0){
+    return 0;
+  }
+
+  for(my $i = 0; $i <= $#R_ARRAY1; $i++){
+    for(my $j = 0; $j <= $#R_ARRAY2; $j++){
+      #print("$E1-$FLAG-$R_ARRAY1[$i]<-->$E2-$FLAG-$R_ARRAY2[$j]  $USABLE{$E1}{$R_ARRAY2[$j]}<-->$USABLE{$E2}{$R_ARRAY1[$i]}\n");
+      next if($R_ARRAY1[$i]=~/^\s*IDLE\s*$/i || $R_ARRAY2[$j]=~/^\s*IDLE\s*$/i);
+      next if(!(exists $USABLE{$E1}{$R_ARRAY2[$j]}) || !(exists $USABLE{$E2}{$R_ARRAY1[$i]}));
+      #the recipe may be not exist on eqpid&flag,because it may be changed and deleted when reach the requirement
+      next if(!(exists $ER_ASSIGN{$E1}{$FLAG}{$R_ARRAY1[$i]}) || !(exists $ER_ASSIGN{$E2}{$FLAG}{$R_ARRAY2[$j]}));
+      $switch_cnt++;
+      next if(if_need_to_switch_on_eqpid_flag($E1,$FLAG)==-1 && $HANDLE_EF_COUNT{$E1}{$FLAG}[0]>=$HANDLE_EF_COUNT{$E2}{$FLAG}[0]);
+      next if(if_need_to_switch_on_eqpid_flag($E1,$FLAG)==1 && $HANDLE_EF_COUNT{$E1}{$FLAG}[0]<=$HANDLE_EF_COUNT{$E2}{$FLAG}[0]);
+      
+      #deep copy hash as new hash data in memory
+      undef %HANDLE_EF_COUNT;
+      %HANDLE_EF_COUNT = %{dclone(\%EF_COUNT)};
+
+      $HANDLE_EF_COUNT{$E1}{$FLAG}[0] = $HANDLE_EF_COUNT{$E1}{$FLAG}[0]-$ER_ASSIGN{$E1}{$FLAG}{$R_ARRAY1[$i]}[0]+$ER_ASSIGN{$E2}{$FLAG}{$R_ARRAY2[$j]}[0];
+      $HANDLE_EF_COUNT{$E1}{$FLAG}[1] = $HANDLE_EF_COUNT{$E1}{$FLAG}[1]-$ER_ASSIGN{$E1}{$FLAG}{$R_ARRAY1[$i]}[1]+$USABLE{$E1}{$R_ARRAY2[$j]} eq "YES"?1:0;
+      $HANDLE_EF_COUNT{$E2}{$FLAG}[0] = $HANDLE_EF_COUNT{$E2}{$FLAG}[0]-$ER_ASSIGN{$E2}{$FLAG}{$R_ARRAY2[$j]}[0]+$ER_ASSIGN{$E1}{$FLAG}{$R_ARRAY1[$i]}[0];
+      $HANDLE_EF_COUNT{$E2}{$FLAG}[1] = $HANDLE_EF_COUNT{$E2}{$FLAG}[1]-$ER_ASSIGN{$E2}{$FLAG}{$R_ARRAY2[$j]}[1]+$USABLE{$E2}{$R_ARRAY1[$i]} eq "YES"?1:0;
+
+      my $lot_score = get_total_lot_score_ON_FLAG($FLAG);
+      my $pilot_score = get_total_pilot_score_ON_FLAG($FLAG);
+      my $tmp_score = $lot_score + $pilot_score;
+      next if($lot_score > $max_total_lot_score || $pilot_score > $max_total_pilot_score || $tmp_score >= $final_score);
+      print("----lot_score=$lot_score pilot_score=$pilot_score  $E1-$FLAG-$R_ARRAY1[$i]<-->$E2-$FLAG-$R_ARRAY2[$j]\n");
+
+      #changed and deleted recipe from eqpid&flag as reach the requirement
+      undef %HANDLE_ER_ASSIGN;
+      %HANDLE_ER_ASSIGN = %{dclone(\%ER_ASSIGN)};
+      $HANDLE_ER_ASSIGN{$E1}{$FLAG}{$R_ARRAY2[$j]}=[$HANDLE_ER_ASSIGN{$E2}{$FLAG}{$R_ARRAY2[$j]}[0],$USABLE{$E1}{$R_ARRAY2[$j]} eq "YES"?1:0];
+      $HANDLE_ER_ASSIGN{$E2}{$FLAG}{$R_ARRAY1[$i]}=[$HANDLE_ER_ASSIGN{$E1}{$FLAG}{$R_ARRAY1[$i]}[0],$USABLE{$E2}{$R_ARRAY1[$i]} eq "YES"?1:0];
+      print("$E1-$FLAG-$R_ARRAY1[$i] @{$HANDLE_ER_ASSIGN{$E1}{$FLAG}{$R_ARRAY1[$i]}}==>$E2-$FLAG-$R_ARRAY1[$i] @{$HANDLE_ER_ASSIGN{$E2}{$FLAG}{$R_ARRAY1[$i]}}\n");
+      print("$E2-$FLAG-$R_ARRAY2[$j] @{$HANDLE_ER_ASSIGN{$E2}{$FLAG}{$R_ARRAY2[$j]}}==>$E1-$FLAG-$R_ARRAY2[$j] @{$HANDLE_ER_ASSIGN{$E1}{$FLAG}{$R_ARRAY2[$j]}}\n\n");
+      delete $HANDLE_ER_ASSIGN{$E2}{$FLAG}{$R_ARRAY2[$j]};
+      delete $HANDLE_ER_ASSIGN{$E1}{$FLAG}{$R_ARRAY1[$i]};
+
+      $final_score = $tmp_score;
+      %EF_COUNT = %{dclone(\%HANDLE_EF_COUNT)};
+      %ER_ASSIGN = %{dclone(\%HANDLE_ER_ASSIGN)};
+
+      #if original data is incorrect,you may find that same recipe & same flag on two or more eqpids,so the lots will static fault.
+      #use the below lots1 and lots2 to debug it to find the issue.
+      #my $lots1= get_lots_on_flag1($FLAG);
+      #my $lots2= get_lots_on_flag2($FLAG);
+      #print("lots1=$lots1 lots2=$lots2\n") if($lots1 != $lots2);
     }
   }
 }
@@ -372,11 +516,11 @@ sub print_ER_ASSIGN{
 
 
 read_INPUT();
-#foreach my $i (keys(%USABLE)){
-#  foreach my $j (keys(%{$USABLE{$i}})){
-#    print("$i--$j==>$USABLE{$i}{$j}\n");
-#  }
-#}
+foreach my $i (keys(%USABLE)){
+  foreach my $j (keys(%{$USABLE{$i}})){
+    print("$i--$j==>$USABLE{$i}{$j}\n");
+  }
+}
 
 read_ER_FILE();
 %HANDLE_EF_COUNT=%{dclone(\%EF_COUNT)};
@@ -404,11 +548,19 @@ my $pilot_score = get_total_pilot_score_ON_FLAG($OP_FLAG);
 $final_score = $lot_score+$pilot_score;
 print("FINAL:$final_score  lot_score=$lot_score pilot_score=$pilot_score\n");
 
+
+for(my $f = 1; $f <= $OP_FLAG; $f++){
+print("====start optimize flag:$f==========\n");
+my $lot_score = get_total_lot_score_ON_FLAG($f);
+my $pilot_score = get_total_pilot_score_ON_FLAG($f);
+$final_score = $lot_score+$pilot_score;
+print("FINAL:$final_score  lot_score=$lot_score pilot_score=$pilot_score\n");
+
 #get all eqpid on flag 1
 my @E_ARRAY;#for store flag1's eqpid
 foreach my $E (keys %EF_COUNT){
   foreach my $F (keys %{$EF_COUNT{$E}}){
-    if($F eq $OP_FLAG){
+    if($F eq $f){
       #print("$E,$F-->@{$EF_COUNT{$E}{$F}}\n");
       push(@E_ARRAY,$E);
     }
@@ -417,17 +569,20 @@ foreach my $E (keys %EF_COUNT){
 
 my $a_cnt = 0;
 for(my $i = 0; $i <= $#E_ARRAY; $i++){
-  for(my $j = $i+1; $j <= $#E_ARRAY; $j++){
+  #for(my $j = $i+1; $j <= $#E_ARRAY; $j++){
+  for(my $j = 0; $i!=$j && $j <= $#E_ARRAY; $j++){
     #print("$E_ARRAY[$i]--$E_ARRAY[$j]\n");
-    switch_recipe_between_eqpid_on_flag($E_ARRAY[$i],$E_ARRAY[$j],$OP_FLAG);
+    #switch_recipe_between_eqpid_on_flag($E_ARRAY[$i],$E_ARRAY[$j],$f);
+    switch_recipe_between_eqpid_to_ave($E_ARRAY[$i],$E_ARRAY[$j],$f);
     $a_cnt++;
   }
 }
-print("$a_cnt  $switch_cnt\n");
+print("E_sg:$a_cnt  R_sg:$switch_cnt\n\n");
 
 print_ER_ASSIGN();
-
-
+#my $lots=get_lots_on_flag(1);
+#print("lots:$lots\n");
+}
 
 
 
