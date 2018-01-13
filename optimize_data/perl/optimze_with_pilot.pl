@@ -380,7 +380,7 @@ sub switch_recipe_between_eqpid_on_flag{
       my $tmp_score = $lot_score + $pilot_score;
       #print("++++lot_score=$lot_score pilot_score=$pilot_score  $E1-$FLAG-$R_ARRAY1[$i]<-->$E2-$FLAG-$R_ARRAY2[$j]\n");
       next if($lot_score > $max_total_lot_score || $pilot_score > $max_total_pilot_score || $tmp_score >= $final_score);
-      print("----lot_score=$lot_score pilot_score=$pilot_score  $E1-$FLAG-$R_ARRAY1[$i]<-->$E2-$FLAG-$R_ARRAY2[$j]\n");
+      print("--$FLAG--lot_score=$lot_score pilot_score=$pilot_score  $E1-$FLAG-$R_ARRAY1[$i]<-->$E2-$FLAG-$R_ARRAY2[$j]\n");
 
       #changed and deleted recipe from eqpid&flag as reach the requirement
       undef %HANDLE_ER_ASSIGN;
@@ -450,7 +450,7 @@ sub switch_recipe{
   my $pilot_score = get_total_pilot_score_ON_FLAG($FLAG);
   my $tmp_score = $lot_score + $pilot_score;
   next if($lot_score > $max_total_lot_score || $pilot_score > $max_total_pilot_score || $tmp_score >= $final_score);
-  print("----lot_score=$lot_score pilot_score=$pilot_score  $E1-$FLAG-$R1<-->$E2-$FLAG-$R2\n");
+  print("--$FLAG--lot_score=$lot_score pilot_score=$pilot_score  $E1-$FLAG-$R1<-->$E2-$FLAG-$R2\n");
 
   #changed and deleted recipe from eqpid&flag as reach the requirement
   undef %HANDLE_ER_ASSIGN;
@@ -491,7 +491,7 @@ sub move_same_recipe{
   my $pilot_score = get_total_pilot_score_ON_FLAG($FLAG);
   my $tmp_score = $lot_score + $pilot_score;
   next if($lot_score > $max_total_lot_score || $pilot_score > $max_total_pilot_score || $tmp_score >= $final_score);
-  print("----lot_score=$lot_score pilot_score=$pilot_score  $E2-$FLAG-$R2--->$E1-$FLAG-$R1\n");
+  print("--$FLAG--lot_score=$lot_score pilot_score=$pilot_score  $E2-$FLAG-$R2--->$E1-$FLAG-$R1\n");
 
   #changed and deleted recipe from eqpid&flag as reach the requirement
   undef %HANDLE_ER_ASSIGN;
@@ -528,8 +528,9 @@ sub move_diff_eqpid{
   my $lot_score = get_total_lot_score_ON_FLAG($FLAG);
   my $pilot_score = get_total_pilot_score_ON_FLAG($FLAG);
   my $tmp_score = $lot_score + $pilot_score;
+  #print("$E2-$FLAG-$R2 @{$ER_ASSIGN{$E2}{$FLAG}{$R2}}====>$E1-$FLAG-$R2\n\n");
   next if($lot_score > $max_total_lot_score || $pilot_score > $max_total_pilot_score || $tmp_score >= $final_score);
-  print("----lot_score=$lot_score pilot_score=$pilot_score  $E2-$FLAG-$R2---->$E1-$FLAG\n");
+  print("--$FLAG--lot_score=$lot_score pilot_score=$pilot_score  $E2-$FLAG-$R2---->$E1-$FLAG\n");
 
   #changed and deleted recipe from eqpid&flag as reach the requirement
   undef %HANDLE_ER_ASSIGN;
@@ -598,53 +599,45 @@ sub switch_recipe_between_eqpid_to_ave{
 
 ##########################################################
 #move recipe from high to low leve between eqpids(highest-lowest)
+#E1 is high
+#E2 is low
 ##########################################################
 sub move_recipe_high_to_low{
   my $E1 = $_[0];
   my $E2 = $_[1];
   my $FLAG = $_[2];
   my @R_ARRAY1;
-  my @R_ARRAY2;
-  foreach my $R (keys %{$ER_ASSIGN{$E1}{$FLAG}}){
-    push(@R_ARRAY1,$R);
-  }
-  foreach my $R (keys %{$ER_ASSIGN{$E2}{$FLAG}}){
-    push(@R_ARRAY2,$R);
+  for(my $f = 1; $f <= $FLAG; $f++){
+    $R_ARRAY1[$f] = [];
+    foreach my $R (keys %{$ER_ASSIGN{$E1}{$f}}){
+      push(@{$R_ARRAY1[$f]},$R);
+      #print("---$f--@{$R_ARRAY1[$f]}\n");
+    }
+    #print("+++$f++@{$R_ARRAY1[$f]}\n");
   }
   #print("@R_ARRAY1\n");
-  #print("@R_ARRAY2\n");
 
   if(if_need_to_switch_on_eqpid_flag($E1,$FLAG)==0){
     return 0;
   }
 
-  for(my $i = 0; $i <= $#R_ARRAY1; $i++){
-    for(my $j = 0; $j <= $#R_ARRAY2; $j++){
-      #print("$E1-$FLAG-$R_ARRAY1[$i]<-->$E2-$FLAG-$R_ARRAY2[$j]  $USABLE{$E1}{$R_ARRAY2[$j]}<-->$USABLE{$E2}{$R_ARRAY1[$i]}\n");
-      next if($R_ARRAY1[$i]=~/^\s*IDLE\s*$/i || $R_ARRAY2[$j]=~/^\s*IDLE\s*$/i);
-      next if(!(exists $USABLE{$E1}{$R_ARRAY2[$j]}) || !(exists $USABLE{$E2}{$R_ARRAY1[$i]}));
+  for(my $f = 1; $f <= $FLAG; $f++){
+    foreach my $R (@{$R_ARRAY1[$f]}){
+      next if($R=~/^\s*IDLE\s*$/i);
+      next if(!(exists $USABLE{$E1}{$R}) || !(exists $USABLE{$E2}{$R}));
       #the recipe may be not exist on eqpid&flag,because it may be changed and deleted when reach the requirement
-      next if(!(exists $ER_ASSIGN{$E1}{$FLAG}{$R_ARRAY1[$i]}) || !(exists $ER_ASSIGN{$E2}{$FLAG}{$R_ARRAY2[$j]}));
+      next if(!(exists $ER_ASSIGN{$E1}{$f}{$R}));
       $switch_cnt++;
-      next if(if_need_to_switch_on_eqpid_flag($E1,$FLAG)==-1 && $HANDLE_EF_COUNT{$E1}{$FLAG}[0]>=$HANDLE_EF_COUNT{$E2}{$FLAG}[0]);
-      next if(if_need_to_switch_on_eqpid_flag($E1,$FLAG)==1 && $HANDLE_EF_COUNT{$E1}{$FLAG}[0]<=$HANDLE_EF_COUNT{$E2}{$FLAG}[0]);
-      
-      if($R_ARRAY1[$i] eq $R_ARRAY2[$j]){
-        if(if_need_to_switch_on_eqpid_flag($E1,$FLAG)==-1){
-          move_same_recipe($E1,$R_ARRAY1[$i],$E2,$R_ARRAY2[$j],$FLAG);
-        }else{
-          move_same_recipe($E2,$R_ARRAY2[$j],$E1,$R_ARRAY1[$i],$FLAG);
-        }
-      }else{
-        switch_recipe($E1,$R_ARRAY1[$i],$E2,$R_ARRAY2[$j],$FLAG);
-      }
+      next if(if_need_to_switch_on_eqpid_flag($E1,$f) != 1 || if_need_to_switch_on_eqpid_flag($E2,$f) == 1);
+
+      move_diff_eqpid($E2,$E1,$R,$f);
 
       #if original data is incorrect,you may find that same recipe & same flag on two or more eqpids,so the lots will static fault.
       #use the below lots1 and lots2 to debug it to find the issue.
       #my $lots1= get_lots_on_flag1($FLAG);
       #my $lots2= get_lots_on_flag2($FLAG);
       #print("lots1=$lots1 lots2=$lots2\n") if($lots1 != $lots2);
-    }
+  }
   }
 }
 
@@ -725,6 +718,29 @@ for(my $i = 0; $i <= $#E_ARRAY; $i++){
     #print("$E_ARRAY[$i]--$E_ARRAY[$j]\n");
     #switch_recipe_between_eqpid_on_flag($E_ARRAY[$i],$E_ARRAY[$j],$f);
     switch_recipe_between_eqpid_to_ave($E_ARRAY[$i],$E_ARRAY[$j],$f);
+    $a_cnt++;
+  }
+}
+print("E_sg:$a_cnt  R_sg:$switch_cnt\n\n");
+
+
+
+#optimize by move recipe from one to another eqpid
+#get all eqpid on flag 1
+undef @E_ARRAY;#for store flag1's eqpid
+foreach my $E (sort{$EF_COUNT{$a}{$f}[0]<=>$EF_COUNT{$b}{$f}[0]} keys %EF_COUNT){
+  foreach my $F (keys %{$EF_COUNT{$E}}){
+    if($F eq $f){
+      #print("$E,$F-->@{$EF_COUNT{$E}{$F}}\n");
+      push(@E_ARRAY,$E);
+    }
+  }
+}
+
+#undef $a_cnt = 0;
+for(my $i = $#E_ARRAY; $i >=0; $i--){
+  for(my $j = 0; $j<$i; $j++){
+    move_recipe_high_to_low($E_ARRAY[$i],$E_ARRAY[$j],$f);
     $a_cnt++;
   }
 }
