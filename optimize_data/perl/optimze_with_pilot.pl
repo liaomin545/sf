@@ -401,6 +401,7 @@ sub switch_recipe_between_eqpid_on_flag{
 }
 
 ##########################################################
+#switch recipe between eqpids in same flag
 #-1:the eqpid's lot < ave,should be input
 # 1:the eqpid's lot > ave+delta,should be output
 # 0:the eqpid's lot ~= ave,should be keep it
@@ -424,6 +425,123 @@ sub if_need_to_switch_on_eqpid_flag{
   }else{
     return 0;
   }
+}
+
+##########################################################
+#switch recipe between eqpids on same flag
+##########################################################
+sub switch_recipe{
+  my $E1 = $_[0];
+  my $R1 = $_[1];
+  my $E2 = $_[2];
+  my $R2 = $_[3];
+  my $FLAG = $_[4];
+  
+  #deep copy hash as new hash data in memory
+  undef %HANDLE_EF_COUNT;
+  %HANDLE_EF_COUNT = %{dclone(\%EF_COUNT)};
+
+  $HANDLE_EF_COUNT{$E1}{$FLAG}[0] = $HANDLE_EF_COUNT{$E1}{$FLAG}[0]-$ER_ASSIGN{$E1}{$FLAG}{$R1}[0]+$ER_ASSIGN{$E2}{$FLAG}{$R2}[0];
+  $HANDLE_EF_COUNT{$E1}{$FLAG}[1] = $HANDLE_EF_COUNT{$E1}{$FLAG}[1]-$ER_ASSIGN{$E1}{$FLAG}{$R1}[1]+$USABLE{$E1}{$R2} eq "YES"?1:0;
+  $HANDLE_EF_COUNT{$E2}{$FLAG}[0] = $HANDLE_EF_COUNT{$E2}{$FLAG}[0]-$ER_ASSIGN{$E2}{$FLAG}{$R2}[0]+$ER_ASSIGN{$E1}{$FLAG}{$R1}[0];
+  $HANDLE_EF_COUNT{$E2}{$FLAG}[1] = $HANDLE_EF_COUNT{$E2}{$FLAG}[1]-$ER_ASSIGN{$E2}{$FLAG}{$R2}[1]+$USABLE{$E2}{$R1} eq "YES"?1:0;
+
+  my $lot_score = get_total_lot_score_ON_FLAG($FLAG);
+  my $pilot_score = get_total_pilot_score_ON_FLAG($FLAG);
+  my $tmp_score = $lot_score + $pilot_score;
+  next if($lot_score > $max_total_lot_score || $pilot_score > $max_total_pilot_score || $tmp_score >= $final_score);
+  print("----lot_score=$lot_score pilot_score=$pilot_score  $E1-$FLAG-$R1<-->$E2-$FLAG-$R2\n");
+
+  #changed and deleted recipe from eqpid&flag as reach the requirement
+  undef %HANDLE_ER_ASSIGN;
+  %HANDLE_ER_ASSIGN = %{dclone(\%ER_ASSIGN)};
+  #may exist the new E-F-R,so need to add
+  $HANDLE_ER_ASSIGN{$E1}{$FLAG}{$R2} = [$HANDLE_ER_ASSIGN{$E1}{$FLAG}{$R2}[0]+$HANDLE_ER_ASSIGN{$E2}{$FLAG}{$R2}[0],$USABLE{$E1}{$R2} eq "YES"?1:0];
+  $HANDLE_ER_ASSIGN{$E2}{$FLAG}{$R1} = [$HANDLE_ER_ASSIGN{$E2}{$FLAG}{$R1}[0]+$HANDLE_ER_ASSIGN{$E1}{$FLAG}{$R1}[0],$USABLE{$E2}{$R1} eq "YES"?1:0];
+  print("$E1-$FLAG-$R1 @{$HANDLE_ER_ASSIGN{$E1}{$FLAG}{$R1}}==>$E2-$FLAG-$R1 @{$HANDLE_ER_ASSIGN{$E2}{$FLAG}{$R1}}\n");
+  print("$E2-$FLAG-$R2 @{$HANDLE_ER_ASSIGN{$E2}{$FLAG}{$R2}}==>$E1-$FLAG-$R2 @{$HANDLE_ER_ASSIGN{$E1}{$FLAG}{$R2}}\n\n");
+  delete $HANDLE_ER_ASSIGN{$E1}{$FLAG}{$R1};
+  delete $HANDLE_ER_ASSIGN{$E2}{$FLAG}{$R2};
+
+  $final_score = $tmp_score;
+  %EF_COUNT = %{dclone(\%HANDLE_EF_COUNT)};
+  %ER_ASSIGN = %{dclone(\%HANDLE_ER_ASSIGN)};
+}
+
+##########################################################
+#just invoke the function if R1==R2
+#move recipe from E2 to E1
+##########################################################
+sub move_same_recipe{
+  my $E1 = $_[0];
+  my $R1 = $_[1];
+  my $E2 = $_[2];
+  my $R2 = $_[3];
+  my $FLAG = $_[4];
+  
+  #deep copy hash as new hash data in memory
+  undef %HANDLE_EF_COUNT;
+  %HANDLE_EF_COUNT = %{dclone(\%EF_COUNT)};
+  
+  $HANDLE_EF_COUNT{$E1}{$FLAG}[0] += $ER_ASSIGN{$E2}{$FLAG}{$R2}[0];
+  $HANDLE_EF_COUNT{$E2}{$FLAG}[0] -= $ER_ASSIGN{$E2}{$FLAG}{$R2}[0];
+  $HANDLE_EF_COUNT{$E2}{$FLAG}[1] -= $ER_ASSIGN{$E2}{$FLAG}{$R2}[1];
+
+  my $lot_score = get_total_lot_score_ON_FLAG($FLAG);
+  my $pilot_score = get_total_pilot_score_ON_FLAG($FLAG);
+  my $tmp_score = $lot_score + $pilot_score;
+  next if($lot_score > $max_total_lot_score || $pilot_score > $max_total_pilot_score || $tmp_score >= $final_score);
+  print("----lot_score=$lot_score pilot_score=$pilot_score  $E2-$FLAG-$R2--->$E1-$FLAG-$R1\n");
+
+  #changed and deleted recipe from eqpid&flag as reach the requirement
+  undef %HANDLE_ER_ASSIGN;
+  %HANDLE_ER_ASSIGN = %{dclone(\%ER_ASSIGN)};
+  
+  print("$E2-$FLAG-$R2 @{$HANDLE_ER_ASSIGN{$E2}{$FLAG}{$R2}}===>$E1-$FLAG-$R1 @{$HANDLE_ER_ASSIGN{$E1}{$FLAG}{$R1}}\n");
+  $HANDLE_ER_ASSIGN{$E1}{$FLAG}{$R1}[0] +=$HANDLE_ER_ASSIGN{$E2}{$FLAG}{$R2}[0];
+  delete $HANDLE_ER_ASSIGN{$E2}{$FLAG}{$R2};
+
+  $final_score = $tmp_score;
+  %EF_COUNT = %{dclone(\%HANDLE_EF_COUNT)};
+  %ER_ASSIGN = %{dclone(\%HANDLE_ER_ASSIGN)};
+}
+
+##########################################################
+#invoke the function if R1!=R2
+#move recipe from E2 to E1
+##########################################################
+sub move_diff_eqpid{
+  my $E1 = $_[0];
+  my $E2 = $_[1];
+  my $R2 = $_[2];
+  my $FLAG = $_[3];
+  
+  #deep copy hash as new hash data in memory
+  undef %HANDLE_EF_COUNT;
+  %HANDLE_EF_COUNT = %{dclone(\%EF_COUNT)};
+  
+  $HANDLE_EF_COUNT{$E1}{$FLAG}[0] += $ER_ASSIGN{$E2}{$FLAG}{$R2}[0];
+  $HANDLE_EF_COUNT{$E1}{$FLAG}[1] += $USABLE{$E1}{$R2} eq "YES"?1:0;
+  $HANDLE_EF_COUNT{$E2}{$FLAG}[0] -= $ER_ASSIGN{$E2}{$FLAG}{$R2}[0];
+  $HANDLE_EF_COUNT{$E2}{$FLAG}[1] -= $ER_ASSIGN{$E2}{$FLAG}{$R2}[1];
+
+  my $lot_score = get_total_lot_score_ON_FLAG($FLAG);
+  my $pilot_score = get_total_pilot_score_ON_FLAG($FLAG);
+  my $tmp_score = $lot_score + $pilot_score;
+  next if($lot_score > $max_total_lot_score || $pilot_score > $max_total_pilot_score || $tmp_score >= $final_score);
+  print("----lot_score=$lot_score pilot_score=$pilot_score  $E2-$FLAG-$R2---->$E1-$FLAG\n");
+
+  #changed and deleted recipe from eqpid&flag as reach the requirement
+  undef %HANDLE_ER_ASSIGN;
+  %HANDLE_ER_ASSIGN = %{dclone(\%ER_ASSIGN)};
+  #may exist the new E-F-R,so need to add
+  $HANDLE_ER_ASSIGN{$E1}{$FLAG}{$R2} = [$HANDLE_ER_ASSIGN{$E1}{$FLAG}{$R2}[0]+$HANDLE_ER_ASSIGN{$E2}{$FLAG}{$R2}[0],$USABLE{$E1}{$R2} eq "YES"?1:0];
+  print("$E2-$FLAG-$R2 @{$HANDLE_ER_ASSIGN{$E2}{$FLAG}{$R2}}====>$E1-$FLAG-$R2 @{$HANDLE_ER_ASSIGN{$E1}{$FLAG}{$R2}}\n\n");
+  delete $HANDLE_ER_ASSIGN{$E2}{$FLAG}{$R2};
+
+  $final_score = $tmp_score;
+  %EF_COUNT = %{dclone(\%HANDLE_EF_COUNT)};
+  %ER_ASSIGN = %{dclone(\%HANDLE_ER_ASSIGN)};
 }
 
 ##########################################################
@@ -459,34 +577,67 @@ sub switch_recipe_between_eqpid_to_ave{
       next if(if_need_to_switch_on_eqpid_flag($E1,$FLAG)==-1 && $HANDLE_EF_COUNT{$E1}{$FLAG}[0]>=$HANDLE_EF_COUNT{$E2}{$FLAG}[0]);
       next if(if_need_to_switch_on_eqpid_flag($E1,$FLAG)==1 && $HANDLE_EF_COUNT{$E1}{$FLAG}[0]<=$HANDLE_EF_COUNT{$E2}{$FLAG}[0]);
       
-      #deep copy hash as new hash data in memory
-      undef %HANDLE_EF_COUNT;
-      %HANDLE_EF_COUNT = %{dclone(\%EF_COUNT)};
+      if($R_ARRAY1[$i] eq $R_ARRAY2[$j]){
+        if(if_need_to_switch_on_eqpid_flag($E1,$FLAG)==-1){
+          move_same_recipe($E1,$R_ARRAY1[$i],$E2,$R_ARRAY2[$j],$FLAG);
+        }else{
+          move_same_recipe($E2,$R_ARRAY2[$j],$E1,$R_ARRAY1[$i],$FLAG);
+        }
+      }else{
+        switch_recipe($E1,$R_ARRAY1[$i],$E2,$R_ARRAY2[$j],$FLAG);
+      }
 
-      $HANDLE_EF_COUNT{$E1}{$FLAG}[0] = $HANDLE_EF_COUNT{$E1}{$FLAG}[0]-$ER_ASSIGN{$E1}{$FLAG}{$R_ARRAY1[$i]}[0]+$ER_ASSIGN{$E2}{$FLAG}{$R_ARRAY2[$j]}[0];
-      $HANDLE_EF_COUNT{$E1}{$FLAG}[1] = $HANDLE_EF_COUNT{$E1}{$FLAG}[1]-$ER_ASSIGN{$E1}{$FLAG}{$R_ARRAY1[$i]}[1]+$USABLE{$E1}{$R_ARRAY2[$j]} eq "YES"?1:0;
-      $HANDLE_EF_COUNT{$E2}{$FLAG}[0] = $HANDLE_EF_COUNT{$E2}{$FLAG}[0]-$ER_ASSIGN{$E2}{$FLAG}{$R_ARRAY2[$j]}[0]+$ER_ASSIGN{$E1}{$FLAG}{$R_ARRAY1[$i]}[0];
-      $HANDLE_EF_COUNT{$E2}{$FLAG}[1] = $HANDLE_EF_COUNT{$E2}{$FLAG}[1]-$ER_ASSIGN{$E2}{$FLAG}{$R_ARRAY2[$j]}[1]+$USABLE{$E2}{$R_ARRAY1[$i]} eq "YES"?1:0;
+      #if original data is incorrect,you may find that same recipe & same flag on two or more eqpids,so the lots will static fault.
+      #use the below lots1 and lots2 to debug it to find the issue.
+      #my $lots1= get_lots_on_flag1($FLAG);
+      #my $lots2= get_lots_on_flag2($FLAG);
+      #print("lots1=$lots1 lots2=$lots2\n") if($lots1 != $lots2);
+    }
+  }
+}
 
-      my $lot_score = get_total_lot_score_ON_FLAG($FLAG);
-      my $pilot_score = get_total_pilot_score_ON_FLAG($FLAG);
-      my $tmp_score = $lot_score + $pilot_score;
-      next if($lot_score > $max_total_lot_score || $pilot_score > $max_total_pilot_score || $tmp_score >= $final_score);
-      print("----lot_score=$lot_score pilot_score=$pilot_score  $E1-$FLAG-$R_ARRAY1[$i]<-->$E2-$FLAG-$R_ARRAY2[$j]\n");
+##########################################################
+#move recipe from high to low leve between eqpids(highest-lowest)
+##########################################################
+sub move_recipe_high_to_low{
+  my $E1 = $_[0];
+  my $E2 = $_[1];
+  my $FLAG = $_[2];
+  my @R_ARRAY1;
+  my @R_ARRAY2;
+  foreach my $R (keys %{$ER_ASSIGN{$E1}{$FLAG}}){
+    push(@R_ARRAY1,$R);
+  }
+  foreach my $R (keys %{$ER_ASSIGN{$E2}{$FLAG}}){
+    push(@R_ARRAY2,$R);
+  }
+  #print("@R_ARRAY1\n");
+  #print("@R_ARRAY2\n");
 
-      #changed and deleted recipe from eqpid&flag as reach the requirement
-      undef %HANDLE_ER_ASSIGN;
-      %HANDLE_ER_ASSIGN = %{dclone(\%ER_ASSIGN)};
-      $HANDLE_ER_ASSIGN{$E1}{$FLAG}{$R_ARRAY2[$j]}=[$HANDLE_ER_ASSIGN{$E2}{$FLAG}{$R_ARRAY2[$j]}[0],$USABLE{$E1}{$R_ARRAY2[$j]} eq "YES"?1:0];
-      $HANDLE_ER_ASSIGN{$E2}{$FLAG}{$R_ARRAY1[$i]}=[$HANDLE_ER_ASSIGN{$E1}{$FLAG}{$R_ARRAY1[$i]}[0],$USABLE{$E2}{$R_ARRAY1[$i]} eq "YES"?1:0];
-      print("$E1-$FLAG-$R_ARRAY1[$i] @{$HANDLE_ER_ASSIGN{$E1}{$FLAG}{$R_ARRAY1[$i]}}==>$E2-$FLAG-$R_ARRAY1[$i] @{$HANDLE_ER_ASSIGN{$E2}{$FLAG}{$R_ARRAY1[$i]}}\n");
-      print("$E2-$FLAG-$R_ARRAY2[$j] @{$HANDLE_ER_ASSIGN{$E2}{$FLAG}{$R_ARRAY2[$j]}}==>$E1-$FLAG-$R_ARRAY2[$j] @{$HANDLE_ER_ASSIGN{$E1}{$FLAG}{$R_ARRAY2[$j]}}\n\n");
-      delete $HANDLE_ER_ASSIGN{$E2}{$FLAG}{$R_ARRAY2[$j]};
-      delete $HANDLE_ER_ASSIGN{$E1}{$FLAG}{$R_ARRAY1[$i]};
+  if(if_need_to_switch_on_eqpid_flag($E1,$FLAG)==0){
+    return 0;
+  }
 
-      $final_score = $tmp_score;
-      %EF_COUNT = %{dclone(\%HANDLE_EF_COUNT)};
-      %ER_ASSIGN = %{dclone(\%HANDLE_ER_ASSIGN)};
+  for(my $i = 0; $i <= $#R_ARRAY1; $i++){
+    for(my $j = 0; $j <= $#R_ARRAY2; $j++){
+      #print("$E1-$FLAG-$R_ARRAY1[$i]<-->$E2-$FLAG-$R_ARRAY2[$j]  $USABLE{$E1}{$R_ARRAY2[$j]}<-->$USABLE{$E2}{$R_ARRAY1[$i]}\n");
+      next if($R_ARRAY1[$i]=~/^\s*IDLE\s*$/i || $R_ARRAY2[$j]=~/^\s*IDLE\s*$/i);
+      next if(!(exists $USABLE{$E1}{$R_ARRAY2[$j]}) || !(exists $USABLE{$E2}{$R_ARRAY1[$i]}));
+      #the recipe may be not exist on eqpid&flag,because it may be changed and deleted when reach the requirement
+      next if(!(exists $ER_ASSIGN{$E1}{$FLAG}{$R_ARRAY1[$i]}) || !(exists $ER_ASSIGN{$E2}{$FLAG}{$R_ARRAY2[$j]}));
+      $switch_cnt++;
+      next if(if_need_to_switch_on_eqpid_flag($E1,$FLAG)==-1 && $HANDLE_EF_COUNT{$E1}{$FLAG}[0]>=$HANDLE_EF_COUNT{$E2}{$FLAG}[0]);
+      next if(if_need_to_switch_on_eqpid_flag($E1,$FLAG)==1 && $HANDLE_EF_COUNT{$E1}{$FLAG}[0]<=$HANDLE_EF_COUNT{$E2}{$FLAG}[0]);
+      
+      if($R_ARRAY1[$i] eq $R_ARRAY2[$j]){
+        if(if_need_to_switch_on_eqpid_flag($E1,$FLAG)==-1){
+          move_same_recipe($E1,$R_ARRAY1[$i],$E2,$R_ARRAY2[$j],$FLAG);
+        }else{
+          move_same_recipe($E2,$R_ARRAY2[$j],$E1,$R_ARRAY1[$i],$FLAG);
+        }
+      }else{
+        switch_recipe($E1,$R_ARRAY1[$i],$E2,$R_ARRAY2[$j],$FLAG);
+      }
 
       #if original data is incorrect,you may find that same recipe & same flag on two or more eqpids,so the lots will static fault.
       #use the below lots1 and lots2 to debug it to find the issue.
@@ -516,11 +667,11 @@ sub print_ER_ASSIGN{
 
 
 read_INPUT();
-foreach my $i (keys(%USABLE)){
-  foreach my $j (keys(%{$USABLE{$i}})){
-    print("$i--$j==>$USABLE{$i}{$j}\n");
-  }
-}
+#foreach my $i (keys(%USABLE)){
+#  foreach my $j (keys(%{$USABLE{$i}})){
+#    print("$i--$j==>$USABLE{$i}{$j}\n");
+#  }
+#}
 
 read_ER_FILE();
 %HANDLE_EF_COUNT=%{dclone(\%EF_COUNT)};
