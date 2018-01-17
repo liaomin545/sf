@@ -671,6 +671,9 @@ sub get_crtl_c{
 }
 
 LOOP:
+undef %ER_ASSIGN;
+undef %EF_COUNT;
+$switch_cnt = 0;
 read_INPUT();
 #foreach my $i (keys(%USABLE)){
 #  foreach my $j (keys(%{$USABLE{$i}})){
