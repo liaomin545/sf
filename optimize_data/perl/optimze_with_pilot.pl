@@ -192,7 +192,8 @@ my %HANDLE_ER_ASSIGN; # (EQPID, RECIPE, FLAG) -> [lot,pilot] deault should be %E
 my %HANDLE_EF_COUNT;  # (EQPID, FLAG) -> [lots,pilots] deault should be %EF_COUNT's deep copy
 #my @EF_COUNT_STORE;   # store %EF_COUNT per ascending order with lots
 my $OP_FLAG = 6;
-my $final_score;      #store the final total score(lot_score+pilot_score)
+#my $final_score;      #store the final total score(lot_score+pilot_score)
+my %final_score;#store the final total score(lot_score+pilot_score),key is flag
 my $switch_cnt = 0;   #recore switch count
 sub read_ER_FILE{
   open(FIN, $ER_FILE) or die "Can't open $ER_FILE";
@@ -379,7 +380,7 @@ sub switch_recipe_between_eqpid_on_flag{
       my $pilot_score = get_total_pilot_score_ON_FLAG($FLAG);
       my $tmp_score = $lot_score + $pilot_score;
       #print("++++lot_score=$lot_score pilot_score=$pilot_score  $E1-$FLAG-$R_ARRAY1[$i]<-->$E2-$FLAG-$R_ARRAY2[$j]\n");
-      next if($lot_score > $max_total_lot_score || $pilot_score > $max_total_pilot_score || $tmp_score >= $final_score);
+      next if($lot_score > $max_total_lot_score || $pilot_score > $max_total_pilot_score || $tmp_score >= $final_score{$FLAG});
       print("--$FLAG--lot_score=$lot_score pilot_score=$pilot_score  $E1-$FLAG-$R_ARRAY1[$i]<-->$E2-$FLAG-$R_ARRAY2[$j]\n");
 
       #changed and deleted recipe from eqpid&flag as reach the requirement
@@ -392,7 +393,7 @@ sub switch_recipe_between_eqpid_on_flag{
       delete $HANDLE_ER_ASSIGN{$E2}{$FLAG}{$R_ARRAY2[$j]};
       delete $HANDLE_ER_ASSIGN{$E1}{$FLAG}{$R_ARRAY1[$i]};
 
-      $final_score = $tmp_score;
+      $final_score{$FLAG} = $tmp_score;
       %EF_COUNT = %{dclone(\%HANDLE_EF_COUNT)};
       %ER_ASSIGN = %{dclone(\%HANDLE_ER_ASSIGN)};
       
@@ -449,7 +450,7 @@ sub switch_recipe{
   my $lot_score = get_total_lot_score_ON_FLAG($FLAG);
   my $pilot_score = get_total_pilot_score_ON_FLAG($FLAG);
   my $tmp_score = $lot_score + $pilot_score;
-  next if($lot_score > $max_total_lot_score || $pilot_score > $max_total_pilot_score || $tmp_score >= $final_score);
+  next if($lot_score > $max_total_lot_score || $pilot_score > $max_total_pilot_score || $tmp_score >= $final_score{$FLAG});
   print("--$FLAG--lot_score=$lot_score pilot_score=$pilot_score  $E1-$FLAG-$R1<-->$E2-$FLAG-$R2\n");
 
   #changed and deleted recipe from eqpid&flag as reach the requirement
@@ -463,7 +464,7 @@ sub switch_recipe{
   delete $HANDLE_ER_ASSIGN{$E1}{$FLAG}{$R1};
   delete $HANDLE_ER_ASSIGN{$E2}{$FLAG}{$R2};
 
-  $final_score = $tmp_score;
+  $final_score{$FLAG} = $tmp_score;
   %EF_COUNT = %{dclone(\%HANDLE_EF_COUNT)};
   %ER_ASSIGN = %{dclone(\%HANDLE_ER_ASSIGN)};
 }
@@ -490,7 +491,7 @@ sub move_same_recipe{
   my $lot_score = get_total_lot_score_ON_FLAG($FLAG);
   my $pilot_score = get_total_pilot_score_ON_FLAG($FLAG);
   my $tmp_score = $lot_score + $pilot_score;
-  next if($lot_score > $max_total_lot_score || $pilot_score > $max_total_pilot_score || $tmp_score >= $final_score);
+  next if($lot_score > $max_total_lot_score || $pilot_score > $max_total_pilot_score || $tmp_score >= $final_score{$FLAG});
   print("--$FLAG--lot_score=$lot_score pilot_score=$pilot_score  $E2-$FLAG-$R2--->$E1-$FLAG-$R1\n");
 
   #changed and deleted recipe from eqpid&flag as reach the requirement
@@ -501,7 +502,7 @@ sub move_same_recipe{
   $HANDLE_ER_ASSIGN{$E1}{$FLAG}{$R1}[0] +=$HANDLE_ER_ASSIGN{$E2}{$FLAG}{$R2}[0];
   delete $HANDLE_ER_ASSIGN{$E2}{$FLAG}{$R2};
 
-  $final_score = $tmp_score;
+  $final_score{$FLAG} = $tmp_score;
   %EF_COUNT = %{dclone(\%HANDLE_EF_COUNT)};
   %ER_ASSIGN = %{dclone(\%HANDLE_ER_ASSIGN)};
 }
@@ -528,8 +529,9 @@ sub move_diff_eqpid{
   my $lot_score = get_total_lot_score_ON_FLAG($FLAG);
   my $pilot_score = get_total_pilot_score_ON_FLAG($FLAG);
   my $tmp_score = $lot_score + $pilot_score;
-  #print("$E2-$FLAG-$R2 @{$ER_ASSIGN{$E2}{$FLAG}{$R2}}====>$E1-$FLAG-$R2\n\n");
-  next if($lot_score > $max_total_lot_score || $pilot_score > $max_total_pilot_score || $tmp_score >= $final_score);
+  print("$E2-$FLAG-$R2 @{$ER_ASSIGN{$E2}{$FLAG}{$R2}}====>$E1-$FLAG-$R2\n\n");
+  #print("--$FLAG--lot_score=$lot_score pilot_score=$pilot_score  $E2-$FLAG-$R2---->$E1-$FLAG\n");
+  #next if($lot_score > $max_total_lot_score || $pilot_score > $max_total_pilot_score || $tmp_score > $final_score{$FLAG});
   print("--$FLAG--lot_score=$lot_score pilot_score=$pilot_score  $E2-$FLAG-$R2---->$E1-$FLAG\n");
 
   #changed and deleted recipe from eqpid&flag as reach the requirement
@@ -540,7 +542,7 @@ sub move_diff_eqpid{
   print("$E2-$FLAG-$R2 @{$HANDLE_ER_ASSIGN{$E2}{$FLAG}{$R2}}====>$E1-$FLAG-$R2 @{$HANDLE_ER_ASSIGN{$E1}{$FLAG}{$R2}}\n\n");
   delete $HANDLE_ER_ASSIGN{$E2}{$FLAG}{$R2};
 
-  $final_score = $tmp_score;
+  $final_score{$FLAG} = $tmp_score;
   %EF_COUNT = %{dclone(\%HANDLE_EF_COUNT)};
   %ER_ASSIGN = %{dclone(\%HANDLE_ER_ASSIGN)};
 }
@@ -689,16 +691,16 @@ foreach my $E (keys %EF_COUNT){
 
 my $lot_score = get_total_lot_score_ON_FLAG($OP_FLAG);
 my $pilot_score = get_total_pilot_score_ON_FLAG($OP_FLAG);
-$final_score = $lot_score+$pilot_score;
-print("FINAL:$final_score  lot_score=$lot_score pilot_score=$pilot_score\n");
+$final_score{$OP_FLAG} = $lot_score+$pilot_score;
+print("FINAL:$final_score{$OP_FLAG} FLAG:$OP_FLAG lot_score=$lot_score pilot_score=$pilot_score\n");
 
 
 for(my $f = 1; $f <= $OP_FLAG; $f++){
 print("====start optimize flag:$f==========\n");
 my $lot_score = get_total_lot_score_ON_FLAG($f);
 my $pilot_score = get_total_pilot_score_ON_FLAG($f);
-$final_score = $lot_score+$pilot_score;
-print("FINAL:$final_score  lot_score=$lot_score pilot_score=$pilot_score\n");
+$final_score{$f} = $lot_score+$pilot_score;
+print("FINAL:$final_score{$f} FLAG:$f  lot_score=$lot_score pilot_score=$pilot_score\n");
 
 #get all eqpid on flag 1
 my @E_ARRAY;#for store flag1's eqpid
@@ -750,6 +752,11 @@ print_ER_ASSIGN();
 #my $lots=get_lots_on_flag(1);
 #print("lots:$lots\n");
 }
+
+my $lot_score = get_total_lot_score_ON_FLAG($OP_FLAG);
+my $pilot_score = get_total_pilot_score_ON_FLAG($OP_FLAG);
+$final_score{$OP_FLAG} = $lot_score+$pilot_score;
+print("FINAL:$final_score{$OP_FLAG} FLAG:$OP_FLAG lot_score=$lot_score pilot_score=$pilot_score\n");
 
 
 
