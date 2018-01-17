@@ -660,7 +660,17 @@ sub print_ER_ASSIGN{
   close(FOUT);
 }
 
+my $final_lot_good_core = 1000;
+my $final_pilot_good_core = 1000;
+my $if_exit = 0;
+$SIG{TERM}=$SIG{INT}=\&get_crtl_c;
 
+sub get_crtl_c{
+  $if_exit = 1;
+  print("!!!!!!!!!!!get ctrl-C signal!!!!!!!!!!!!\n");
+}
+
+LOOP:
 read_INPUT();
 #foreach my $i (keys(%USABLE)){
 #  foreach my $j (keys(%{$USABLE{$i}})){
@@ -689,75 +699,87 @@ foreach my $E (keys %EF_COUNT){
 #  print("FLAG$F:$l_cnt\n");
 #}
 
-my $lot_score = get_total_lot_score_ON_FLAG($OP_FLAG);
-my $pilot_score = get_total_pilot_score_ON_FLAG($OP_FLAG);
-$final_score{$OP_FLAG} = $lot_score+$pilot_score;
-print("FINAL:$final_score{$OP_FLAG} FLAG:$OP_FLAG lot_score=$lot_score pilot_score=$pilot_score\n");
+#my $lot_score = get_total_lot_score_ON_FLAG($OP_FLAG);
+#my $pilot_score = get_total_pilot_score_ON_FLAG($OP_FLAG);
+#$final_score{$OP_FLAG} = $lot_score+$pilot_score;
+#$final_lot_good_core = $lot_score;
+#$final_pilot_good_core = $pilot_score;
+#print("FINAL:$final_score{$OP_FLAG} FLAG:$OP_FLAG lot_score=$lot_score pilot_score=$pilot_score\n");
 
 
 for(my $f = 1; $f <= $OP_FLAG; $f++){
-print("====start optimize flag:$f==========\n");
-my $lot_score = get_total_lot_score_ON_FLAG($f);
-my $pilot_score = get_total_pilot_score_ON_FLAG($f);
-$final_score{$f} = $lot_score+$pilot_score;
-print("FINAL:$final_score{$f} FLAG:$f  lot_score=$lot_score pilot_score=$pilot_score\n");
-
-#get all eqpid on flag 1
-my @E_ARRAY;#for store flag1's eqpid
-foreach my $E (keys %EF_COUNT){
-  foreach my $F (keys %{$EF_COUNT{$E}}){
-    if($F eq $f){
-      #print("$E,$F-->@{$EF_COUNT{$E}{$F}}\n");
-      push(@E_ARRAY,$E);
+  print("====start optimize flag:$f==========\n");
+  my $lot_score = get_total_lot_score_ON_FLAG($f);
+  my $pilot_score = get_total_pilot_score_ON_FLAG($f);
+  $final_score{$f} = $lot_score+$pilot_score;
+  print("FINAL:$final_score{$f} FLAG:$f  lot_score=$lot_score pilot_score=$pilot_score\n");
+  
+  #get all eqpid on flag 1
+  my @E_ARRAY;#for store flag1's eqpid
+  foreach my $E (keys %EF_COUNT){
+    foreach my $F (keys %{$EF_COUNT{$E}}){
+      if($F eq $f){
+        #print("$E,$F-->@{$EF_COUNT{$E}{$F}}\n");
+        push(@E_ARRAY,$E);
+      }
     }
   }
-}
-
-my $a_cnt = 0;
-for(my $i = 0; $i <= $#E_ARRAY; $i++){
-  #for(my $j = $i+1; $j <= $#E_ARRAY; $j++){
-  for(my $j = 0; $i!=$j && $j <= $#E_ARRAY; $j++){
-    #print("$E_ARRAY[$i]--$E_ARRAY[$j]\n");
-    #switch_recipe_between_eqpid_on_flag($E_ARRAY[$i],$E_ARRAY[$j],$f);
-    switch_recipe_between_eqpid_to_ave($E_ARRAY[$i],$E_ARRAY[$j],$f);
-    $a_cnt++;
-  }
-}
-print("E_sg:$a_cnt  R_sg:$switch_cnt\n\n");
-
-
-
-#optimize by move recipe from one to another eqpid
-#get all eqpid on flag 1
-undef @E_ARRAY;#for store flag1's eqpid
-foreach my $E (sort{$EF_COUNT{$a}{$f}[0]<=>$EF_COUNT{$b}{$f}[0]} keys %EF_COUNT){
-  foreach my $F (keys %{$EF_COUNT{$E}}){
-    if($F eq $f){
-      #print("$E,$F-->@{$EF_COUNT{$E}{$F}}\n");
-      push(@E_ARRAY,$E);
+  
+  my $a_cnt = 0;
+  for(my $i = 0; $i <= $#E_ARRAY; $i++){
+    #for(my $j = $i+1; $j <= $#E_ARRAY; $j++){
+    for(my $j = 0; $i!=$j && $j <= $#E_ARRAY; $j++){
+      #print("$E_ARRAY[$i]--$E_ARRAY[$j]\n");
+      #switch_recipe_between_eqpid_on_flag($E_ARRAY[$i],$E_ARRAY[$j],$f);
+      switch_recipe_between_eqpid_to_ave($E_ARRAY[$i],$E_ARRAY[$j],$f);
+      $a_cnt++;
     }
   }
-}
-
-#undef $a_cnt = 0;
-for(my $i = $#E_ARRAY; $i >=0; $i--){
-  for(my $j = 0; $j<$i; $j++){
-    move_recipe_high_to_low($E_ARRAY[$i],$E_ARRAY[$j],$f);
-    $a_cnt++;
+  print("E_sg:$a_cnt  R_sg:$switch_cnt\n\n");
+  
+  
+  
+  #optimize by move recipe from one to another eqpid
+  #get all eqpid on flag 1
+  undef @E_ARRAY;#for store flag1's eqpid
+  foreach my $E (sort{$EF_COUNT{$a}{$f}[0]<=>$EF_COUNT{$b}{$f}[0]} keys %EF_COUNT){
+    foreach my $F (keys %{$EF_COUNT{$E}}){
+      if($F eq $f){
+        #print("$E,$F-->@{$EF_COUNT{$E}{$F}}\n");
+        push(@E_ARRAY,$E);
+      }
+    }
   }
-}
-print("E_sg:$a_cnt  R_sg:$switch_cnt\n\n");
-
-print_ER_ASSIGN();
-#my $lots=get_lots_on_flag(1);
-#print("lots:$lots\n");
+  
+  #undef $a_cnt = 0;
+  for(my $i = $#E_ARRAY; $i >=0; $i--){
+    for(my $j = 0; $j<$i; $j++){
+      move_recipe_high_to_low($E_ARRAY[$i],$E_ARRAY[$j],$f);
+      $a_cnt++;
+    }
+  }
+  print("E_sg:$a_cnt  R_sg:$switch_cnt\n\n");
+  
+  #my $lots=get_lots_on_flag(1);
+  #print("lots:$lots\n");
 }
 
 my $lot_score = get_total_lot_score_ON_FLAG($OP_FLAG);
 my $pilot_score = get_total_pilot_score_ON_FLAG($OP_FLAG);
 $final_score{$OP_FLAG} = $lot_score+$pilot_score;
 print("FINAL:$final_score{$OP_FLAG} FLAG:$OP_FLAG lot_score=$lot_score pilot_score=$pilot_score\n");
+if($lot_score < $final_lot_good_core){
+  $final_lot_good_core = $lot_score;
+  $final_pilot_good_core = $pilot_score;
+  print("FLAG:get min\n");
+  print_ER_ASSIGN();
+}
 
-
+if($if_exit == 1){
+  print("FINAL_GOOD_CORE---FLAG:$OP_FLAG lot_score=$final_lot_good_core pilot_score=$final_pilot_good_core\n");
+  exit(0);
+}else{
+  goto LOOP;
+}
 
 
