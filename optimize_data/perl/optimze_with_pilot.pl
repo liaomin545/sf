@@ -372,9 +372,9 @@ sub switch_recipe_between_eqpid_on_flag{
       %HANDLE_EF_COUNT = %{dclone(\%EF_COUNT)};
 
       $HANDLE_EF_COUNT{$E1}{$FLAG}[0] = $HANDLE_EF_COUNT{$E1}{$FLAG}[0]-$ER_ASSIGN{$E1}{$FLAG}{$R_ARRAY1[$i]}[0]+$ER_ASSIGN{$E2}{$FLAG}{$R_ARRAY2[$j]}[0];
-      $HANDLE_EF_COUNT{$E1}{$FLAG}[1] = $HANDLE_EF_COUNT{$E1}{$FLAG}[1]-$ER_ASSIGN{$E1}{$FLAG}{$R_ARRAY1[$i]}[1]+$USABLE{$E1}{$R_ARRAY2[$j]} eq "YES"?1:0;
+      $HANDLE_EF_COUNT{$E1}{$FLAG}[1] = $HANDLE_EF_COUNT{$E1}{$FLAG}[1]-$ER_ASSIGN{$E1}{$FLAG}{$R_ARRAY1[$i]}[1]+$USABLE{$E1}{$R_ARRAY2[$j]} eq "YES"?0:1;
       $HANDLE_EF_COUNT{$E2}{$FLAG}[0] = $HANDLE_EF_COUNT{$E2}{$FLAG}[0]-$ER_ASSIGN{$E2}{$FLAG}{$R_ARRAY2[$j]}[0]+$ER_ASSIGN{$E1}{$FLAG}{$R_ARRAY1[$i]}[0];
-      $HANDLE_EF_COUNT{$E2}{$FLAG}[1] = $HANDLE_EF_COUNT{$E2}{$FLAG}[1]-$ER_ASSIGN{$E2}{$FLAG}{$R_ARRAY2[$j]}[1]+$USABLE{$E2}{$R_ARRAY1[$i]} eq "YES"?1:0;
+      $HANDLE_EF_COUNT{$E2}{$FLAG}[1] = $HANDLE_EF_COUNT{$E2}{$FLAG}[1]-$ER_ASSIGN{$E2}{$FLAG}{$R_ARRAY2[$j]}[1]+$USABLE{$E2}{$R_ARRAY1[$i]} eq "YES"?0:1;
 
       my $lot_score = get_total_lot_score_ON_FLAG($FLAG);
       my $pilot_score = get_total_pilot_score_ON_FLAG($FLAG);
@@ -386,8 +386,8 @@ sub switch_recipe_between_eqpid_on_flag{
       #changed and deleted recipe from eqpid&flag as reach the requirement
       undef %HANDLE_ER_ASSIGN;
       %HANDLE_ER_ASSIGN = %{dclone(\%ER_ASSIGN)};
-      $HANDLE_ER_ASSIGN{$E1}{$FLAG}{$R_ARRAY2[$j]}=[$HANDLE_ER_ASSIGN{$E2}{$FLAG}{$R_ARRAY2[$j]}[0],$USABLE{$E1}{$R_ARRAY2[$j]} eq "YES"?1:0];
-      $HANDLE_ER_ASSIGN{$E2}{$FLAG}{$R_ARRAY1[$i]}=[$HANDLE_ER_ASSIGN{$E1}{$FLAG}{$R_ARRAY1[$i]}[0],$USABLE{$E2}{$R_ARRAY1[$i]} eq "YES"?1:0];
+      $HANDLE_ER_ASSIGN{$E1}{$FLAG}{$R_ARRAY2[$j]}=[$HANDLE_ER_ASSIGN{$E2}{$FLAG}{$R_ARRAY2[$j]}[0],$USABLE{$E1}{$R_ARRAY2[$j]} eq "YES"?0:1];
+      $HANDLE_ER_ASSIGN{$E2}{$FLAG}{$R_ARRAY1[$i]}=[$HANDLE_ER_ASSIGN{$E1}{$FLAG}{$R_ARRAY1[$i]}[0],$USABLE{$E2}{$R_ARRAY1[$i]} eq "YES"?0:1];
       print("$E1-$FLAG-$R_ARRAY1[$i] @{$HANDLE_ER_ASSIGN{$E1}{$FLAG}{$R_ARRAY1[$i]}}==>$E2-$FLAG-$R_ARRAY1[$i] @{$HANDLE_ER_ASSIGN{$E2}{$FLAG}{$R_ARRAY1[$i]}}\n");
       print("$E2-$FLAG-$R_ARRAY2[$j] @{$HANDLE_ER_ASSIGN{$E2}{$FLAG}{$R_ARRAY2[$j]}}==>$E1-$FLAG-$R_ARRAY2[$j] @{$HANDLE_ER_ASSIGN{$E1}{$FLAG}{$R_ARRAY2[$j]}}\n\n");
       delete $HANDLE_ER_ASSIGN{$E2}{$FLAG}{$R_ARRAY2[$j]};
@@ -443,9 +443,9 @@ sub switch_recipe{
   %HANDLE_EF_COUNT = %{dclone(\%EF_COUNT)};
 
   $HANDLE_EF_COUNT{$E1}{$FLAG}[0] = $HANDLE_EF_COUNT{$E1}{$FLAG}[0]-$ER_ASSIGN{$E1}{$FLAG}{$R1}[0]+$ER_ASSIGN{$E2}{$FLAG}{$R2}[0];
-  $HANDLE_EF_COUNT{$E1}{$FLAG}[1] = $HANDLE_EF_COUNT{$E1}{$FLAG}[1]-$ER_ASSIGN{$E1}{$FLAG}{$R1}[1]+$USABLE{$E1}{$R2} eq "YES"?1:0;
+  $HANDLE_EF_COUNT{$E1}{$FLAG}[1] = $HANDLE_EF_COUNT{$E1}{$FLAG}[1]-$ER_ASSIGN{$E1}{$FLAG}{$R1}[1]+$USABLE{$E1}{$R2} eq "YES"?0:1;
   $HANDLE_EF_COUNT{$E2}{$FLAG}[0] = $HANDLE_EF_COUNT{$E2}{$FLAG}[0]-$ER_ASSIGN{$E2}{$FLAG}{$R2}[0]+$ER_ASSIGN{$E1}{$FLAG}{$R1}[0];
-  $HANDLE_EF_COUNT{$E2}{$FLAG}[1] = $HANDLE_EF_COUNT{$E2}{$FLAG}[1]-$ER_ASSIGN{$E2}{$FLAG}{$R2}[1]+$USABLE{$E2}{$R1} eq "YES"?1:0;
+  $HANDLE_EF_COUNT{$E2}{$FLAG}[1] = $HANDLE_EF_COUNT{$E2}{$FLAG}[1]-$ER_ASSIGN{$E2}{$FLAG}{$R2}[1]+$USABLE{$E2}{$R1} eq "YES"?0:1;
 
   my $lot_score = get_total_lot_score_ON_FLAG($FLAG);
   my $pilot_score = get_total_pilot_score_ON_FLAG($FLAG);
@@ -457,8 +457,8 @@ sub switch_recipe{
   undef %HANDLE_ER_ASSIGN;
   %HANDLE_ER_ASSIGN = %{dclone(\%ER_ASSIGN)};
   #may exist the new E-F-R,so need to add
-  $HANDLE_ER_ASSIGN{$E1}{$FLAG}{$R2} = [$HANDLE_ER_ASSIGN{$E1}{$FLAG}{$R2}[0]+$HANDLE_ER_ASSIGN{$E2}{$FLAG}{$R2}[0],$USABLE{$E1}{$R2} eq "YES"?1:0];
-  $HANDLE_ER_ASSIGN{$E2}{$FLAG}{$R1} = [$HANDLE_ER_ASSIGN{$E2}{$FLAG}{$R1}[0]+$HANDLE_ER_ASSIGN{$E1}{$FLAG}{$R1}[0],$USABLE{$E2}{$R1} eq "YES"?1:0];
+  $HANDLE_ER_ASSIGN{$E1}{$FLAG}{$R2} = [$HANDLE_ER_ASSIGN{$E1}{$FLAG}{$R2}[0]+$HANDLE_ER_ASSIGN{$E2}{$FLAG}{$R2}[0],$USABLE{$E1}{$R2} eq "YES"?0:1];
+  $HANDLE_ER_ASSIGN{$E2}{$FLAG}{$R1} = [$HANDLE_ER_ASSIGN{$E2}{$FLAG}{$R1}[0]+$HANDLE_ER_ASSIGN{$E1}{$FLAG}{$R1}[0],$USABLE{$E2}{$R1} eq "YES"?0:1];
   print("$E1-$FLAG-$R1 @{$HANDLE_ER_ASSIGN{$E1}{$FLAG}{$R1}}==>$E2-$FLAG-$R1 @{$HANDLE_ER_ASSIGN{$E2}{$FLAG}{$R1}}\n");
   print("$E2-$FLAG-$R2 @{$HANDLE_ER_ASSIGN{$E2}{$FLAG}{$R2}}==>$E1-$FLAG-$R2 @{$HANDLE_ER_ASSIGN{$E1}{$FLAG}{$R2}}\n\n");
   delete $HANDLE_ER_ASSIGN{$E1}{$FLAG}{$R1};
@@ -522,7 +522,7 @@ sub move_diff_eqpid{
   %HANDLE_EF_COUNT = %{dclone(\%EF_COUNT)};
   
   $HANDLE_EF_COUNT{$E1}{$FLAG}[0] += $ER_ASSIGN{$E2}{$FLAG}{$R2}[0];
-  $HANDLE_EF_COUNT{$E1}{$FLAG}[1] += $USABLE{$E1}{$R2} eq "YES"?1:0;
+  $HANDLE_EF_COUNT{$E1}{$FLAG}[1] += $USABLE{$E1}{$R2} eq "YES"?0:1;
   $HANDLE_EF_COUNT{$E2}{$FLAG}[0] -= $ER_ASSIGN{$E2}{$FLAG}{$R2}[0];
   $HANDLE_EF_COUNT{$E2}{$FLAG}[1] -= $ER_ASSIGN{$E2}{$FLAG}{$R2}[1];
 
@@ -538,7 +538,7 @@ sub move_diff_eqpid{
   undef %HANDLE_ER_ASSIGN;
   %HANDLE_ER_ASSIGN = %{dclone(\%ER_ASSIGN)};
   #may exist the new E-F-R,so need to add
-  $HANDLE_ER_ASSIGN{$E1}{$FLAG}{$R2} = [$HANDLE_ER_ASSIGN{$E1}{$FLAG}{$R2}[0]+$HANDLE_ER_ASSIGN{$E2}{$FLAG}{$R2}[0],$USABLE{$E1}{$R2} eq "YES"?1:0];
+  $HANDLE_ER_ASSIGN{$E1}{$FLAG}{$R2} = [$HANDLE_ER_ASSIGN{$E1}{$FLAG}{$R2}[0]+$HANDLE_ER_ASSIGN{$E2}{$FLAG}{$R2}[0],$USABLE{$E1}{$R2} eq "YES"?0:1];
   print("$E2-$FLAG-$R2 @{$HANDLE_ER_ASSIGN{$E2}{$FLAG}{$R2}}====>$E1-$FLAG-$R2 @{$HANDLE_ER_ASSIGN{$E1}{$FLAG}{$R2}}\n\n");
   delete $HANDLE_ER_ASSIGN{$E2}{$FLAG}{$R2};
 
@@ -776,6 +776,10 @@ if($lot_score < $final_lot_good_core){
   $final_pilot_good_core = $pilot_score;
   print("FLAG:get min\n");
   print_ER_ASSIGN();
+  if($final_lot_good_core <= 100 && $final_pilot_good_core<=110){
+    print("BEST_CORE---FLAG:$OP_FLAG lot_score=$final_lot_good_core pilot_score=$final_pilot_good_core\n");
+    exit(0);
+  }
 }
 
 if($if_exit == 1){
