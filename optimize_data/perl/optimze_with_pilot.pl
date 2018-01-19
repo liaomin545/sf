@@ -655,6 +655,35 @@ sub print_ER_ASSIGN{
   close(FOUT);
 }
 
+#just print %USABLE
+sub print_USABLE{
+  foreach my $i (keys(%USABLE)){
+    foreach my $j (keys(%{$USABLE{$i}})){
+      print("USABLE: $i--$j==>$USABLE{$i}{$j}\n");
+    }
+  }
+}
+
+#just print %EF_COUNT
+sub print_EF_COUNT{
+  foreach my $E (keys %EF_COUNT){
+    foreach my $F (keys %{$EF_COUNT{$E}}){
+      if($F <= $OP_FLAG){
+        print("$E,$F-->@{$EF_COUNT{$E}{$F}}\n");
+      }
+    }
+  }
+}
+
+#just print eqp num under all flag
+sub print_eqp_num_and_ave_lot{
+  for(my $f = 1; $f <= $FLAG_MAX; $f++){
+    my $e_cnt = get_EQP_NUM_ON_FLAG($f);
+    my $l_ave = get_ave_lot_with_flag($f);
+    print("FLAG:$f EQP_NUM:$e_cnt LOT_AVE:$l_ave\n");
+  }
+}
+
 my $final_lot_good_core = 1000;
 my $final_pilot_good_core = 1000;
 my $if_exit = 0;
@@ -674,44 +703,24 @@ undef %ER_ASSIGN;
 undef %EF_COUNT;
 $switch_cnt = 0;
 read_INPUT();
-#foreach my $i (keys(%USABLE)){
-#  foreach my $j (keys(%{$USABLE{$i}})){
-#    print("$i--$j==>$USABLE{$i}{$j}\n");
-#  }
-#}
+#print_USABLE();
 
 read_ER_FILE();
 %HANDLE_EF_COUNT=%{dclone(\%EF_COUNT)};
 
-#foreach my $E (keys %EF_COUNT){
-#  foreach my $F (keys %{$EF_COUNT{$E}}){
-#    if($F <= $OP_FLAG){
-#      print("$E,$F-->@{$EF_COUNT{$E}{$F}}\n");
-#    }
-#  }
-#}
+#print_EF_COUNT();
 
+#print_eqp_num_and_ave_lot();
 
-#get all flag's eqp num
-#for(my $F = 1; $F <= $FLAG_MAX; $F++){
-#  my $cnt = get_EQP_NUM_ON_FLAG($F);
-#  print("FLAG$F:$cnt\n");
-#  my $l_cnt = get_ave_lot_with_flag($F);
-#  print("FLAG$F:$l_cnt\n");
-#}
+#($final_score{$OP_FLAG},$final_lot_good_core,$final_pilot_good_core) = get_total_score($OP_FLAG);
+#print(">>>START_SCORE:$final_score{$OP_FLAG} FLAG:$OP_FLAG lot_score=$final_lot_good_core pilot_score=$final_pilot_good_core\n");
 
-#my $lot_score = get_total_lot_score_ON_FLAG($OP_FLAG);
-#my $pilot_score = get_total_pilot_score_ON_FLAG($OP_FLAG);
-#$final_score{$OP_FLAG} = $lot_score+$pilot_score;
-#$final_lot_good_core = $lot_score;
-#$final_pilot_good_core = $pilot_score;
-#print("FINAL:$final_score{$OP_FLAG} FLAG:$OP_FLAG lot_score=$lot_score pilot_score=$pilot_score\n");
 
 
 for(my $f = 1; $f <= $OP_FLAG; $f++){
   print("====start optimize flag:$f==========\n");
   ($final_score{$f},my $lot_score,my $pilot_score) = get_total_score($f);
-  print(">>>TOTAL_SCORE:$final_score{$f} FLAG:$f  lot_score=$lot_score pilot_score=$pilot_score\n");
+  print(">>>STATIC_SCORE:$final_score{$f} FLAG:$f  lot_score=$lot_score pilot_score=$pilot_score\n");
   
   #get all eqpid on flag 1
   my @E_ARRAY;#for store flag1's eqpid
@@ -764,7 +773,7 @@ for(my $f = 1; $f <= $OP_FLAG; $f++){
 }
 
 ($final_score{$OP_FLAG},my $lot_score,my $pilot_score) = get_total_score($OP_FLAG);
-print(">>>TOTAL_SCORE:$final_score{$OP_FLAG} FLAG:$OP_FLAG lot_score=$lot_score pilot_score=$pilot_score\n");
+print(">>>FINAL_SCORE:$final_score{$OP_FLAG} FLAG:$OP_FLAG lot_score=$lot_score pilot_score=$pilot_score\n");
 if($lot_score < $final_lot_good_core){
   $final_lot_good_core = $lot_score;
   $final_pilot_good_core = $pilot_score;
