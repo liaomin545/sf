@@ -381,7 +381,7 @@ sub switch_recipe_between_eqpid_on_flag{
 
       my ($tmp_score,$lot_score,$pilot_score) = get_total_score($FLAG);
       #print("++++lot_score=$lot_score pilot_score=$pilot_score  $E1-$FLAG-$R_ARRAY1[$i]<-->$E2-$FLAG-$R_ARRAY2[$j]\n");
-      next if($lot_score > $max_total_lot_score || $pilot_score > $max_total_pilot_score || $tmp_score >= $final_score{$FLAG});
+      next if($tmp_score >= $final_score{$FLAG} || $lot_score > $max_total_lot_score || $pilot_score > $max_total_pilot_score);
       print("--$FLAG--lot_score=$lot_score pilot_score=$pilot_score  $E1-$FLAG-$R_ARRAY1[$i]<-->$E2-$FLAG-$R_ARRAY2[$j]\n");
 
       #changed and deleted recipe from eqpid&flag as reach the requirement
@@ -449,7 +449,7 @@ sub switch_recipe{
   $HANDLE_EF_COUNT{$E2}{$FLAG}[1] = $HANDLE_EF_COUNT{$E2}{$FLAG}[1]-$ER_ASSIGN{$E2}{$FLAG}{$R2}[1]+$USABLE{$E2}{$R1} eq "YES"?0:1;
 
   my ($tmp_score,$lot_score,$pilot_score) = get_total_score($FLAG);
-  next if($lot_score > $max_total_lot_score || $pilot_score > $max_total_pilot_score || $tmp_score >= $final_score{$FLAG});
+  next if($tmp_score >= $final_score{$FLAG} || $lot_score > $max_total_lot_score || $pilot_score > $max_total_pilot_score);
   print("--$FLAG--lot_score=$lot_score pilot_score=$pilot_score  $E1-$FLAG-$R1<-->$E2-$FLAG-$R2\n");
 
   #changed and deleted recipe from eqpid&flag as reach the requirement
@@ -488,7 +488,7 @@ sub move_same_recipe{
   $HANDLE_EF_COUNT{$E2}{$FLAG}[1] -= $ER_ASSIGN{$E2}{$FLAG}{$R2}[1];
 
   my ($tmp_score,$lot_score,$pilot_score) = get_total_score($FLAG);
-  next if($lot_score > $max_total_lot_score || $pilot_score > $max_total_pilot_score || $tmp_score >= $final_score{$FLAG});
+  next if($tmp_score >= $final_score{$FLAG} || $lot_score > $max_total_lot_score || $pilot_score > $max_total_pilot_score);
   print("--$FLAG--lot_score=$lot_score pilot_score=$pilot_score  $E2-$FLAG-$R2--->$E1-$FLAG-$R1\n");
 
   #changed and deleted recipe from eqpid&flag as reach the requirement
@@ -526,7 +526,7 @@ sub move_diff_eqpid{
   my ($tmp_score,$lot_score,$pilot_score) = get_total_score($FLAG);
   print("$E2-$FLAG-$R2 @{$ER_ASSIGN{$E2}{$FLAG}{$R2}}====>$E1-$FLAG-$R2\n\n");
   #print("--$FLAG--lot_score=$lot_score pilot_score=$pilot_score  $E2-$FLAG-$R2---->$E1-$FLAG\n");
-  #next if($lot_score > $max_total_lot_score || $pilot_score > $max_total_pilot_score || $tmp_score > $final_score{$FLAG});
+  #next if($tmp_score > $final_score{$FLAG}  || $lot_score > $max_total_lot_score || $pilot_score > $max_total_pilot_score);
   print("--$FLAG--lot_score=$lot_score pilot_score=$pilot_score  $E2-$FLAG-$R2---->$E1-$FLAG\n");
 
   #changed and deleted recipe from eqpid&flag as reach the requirement
