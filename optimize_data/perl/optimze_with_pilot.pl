@@ -706,16 +706,14 @@ read_INPUT();
 #print_USABLE();
 
 read_ER_FILE();
-%HANDLE_EF_COUNT=%{dclone(\%EF_COUNT)};
 
 #print_EF_COUNT();
 
 #print_eqp_num_and_ave_lot();
 
-#($final_score{$OP_FLAG},$final_lot_good_core,$final_pilot_good_core) = get_total_score($OP_FLAG);
-#print(">>>START_SCORE:$final_score{$OP_FLAG} FLAG:$OP_FLAG lot_score=$final_lot_good_core pilot_score=$final_pilot_good_core\n");
-
-
+%HANDLE_EF_COUNT=%{dclone(\%EF_COUNT)};
+($final_score{$OP_FLAG},my $tmp_lot_score,my $tmp_pilot_score) = get_total_score($OP_FLAG);
+print(">>>START_SCORE:$final_score{$OP_FLAG} FLAG:$OP_FLAG lot_score=$tmp_lot_score pilot_score=$tmp_pilot_score\n");
 
 for(my $f = 1; $f <= $OP_FLAG; $f++){
   print("====start optimize flag:$f==========\n");
