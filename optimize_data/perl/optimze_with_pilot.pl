@@ -334,6 +334,16 @@ sub get_total_pilot_score_ON_FLAG{
   return $score;
 }
 
+##############################################
+#static total score and return (total_score,lot_score,pilot_score)
+##############################################
+sub get_total_score{
+  my $f = $_[0];
+  my $lot_score = get_total_lot_score_ON_FLAG($f);
+  my $pilot_score = get_total_pilot_score_ON_FLAG($f);
+  return ($lot_score+$pilot_score,$lot_score,$pilot_score);
+}
+
 ##########################################################
 #switch recipe between eqpids if the lot&pilot score is smaller then before
 ##########################################################
@@ -369,9 +379,7 @@ sub switch_recipe_between_eqpid_on_flag{
       $HANDLE_EF_COUNT{$E2}{$FLAG}[0] = $HANDLE_EF_COUNT{$E2}{$FLAG}[0]-$ER_ASSIGN{$E2}{$FLAG}{$R_ARRAY2[$j]}[0]+$ER_ASSIGN{$E1}{$FLAG}{$R_ARRAY1[$i]}[0];
       $HANDLE_EF_COUNT{$E2}{$FLAG}[1] = $HANDLE_EF_COUNT{$E2}{$FLAG}[1]-$ER_ASSIGN{$E2}{$FLAG}{$R_ARRAY2[$j]}[1]+$USABLE{$E2}{$R_ARRAY1[$i]} eq "YES"?0:1;
 
-      my $lot_score = get_total_lot_score_ON_FLAG($FLAG);
-      my $pilot_score = get_total_pilot_score_ON_FLAG($FLAG);
-      my $tmp_score = $lot_score + $pilot_score;
+      my ($tmp_score,$lot_score,$pilot_score) = get_total_score($FLAG);
       #print("++++lot_score=$lot_score pilot_score=$pilot_score  $E1-$FLAG-$R_ARRAY1[$i]<-->$E2-$FLAG-$R_ARRAY2[$j]\n");
       next if($lot_score > $max_total_lot_score || $pilot_score > $max_total_pilot_score || $tmp_score >= $final_score{$FLAG});
       print("--$FLAG--lot_score=$lot_score pilot_score=$pilot_score  $E1-$FLAG-$R_ARRAY1[$i]<-->$E2-$FLAG-$R_ARRAY2[$j]\n");
@@ -440,9 +448,7 @@ sub switch_recipe{
   $HANDLE_EF_COUNT{$E2}{$FLAG}[0] = $HANDLE_EF_COUNT{$E2}{$FLAG}[0]-$ER_ASSIGN{$E2}{$FLAG}{$R2}[0]+$ER_ASSIGN{$E1}{$FLAG}{$R1}[0];
   $HANDLE_EF_COUNT{$E2}{$FLAG}[1] = $HANDLE_EF_COUNT{$E2}{$FLAG}[1]-$ER_ASSIGN{$E2}{$FLAG}{$R2}[1]+$USABLE{$E2}{$R1} eq "YES"?0:1;
 
-  my $lot_score = get_total_lot_score_ON_FLAG($FLAG);
-  my $pilot_score = get_total_pilot_score_ON_FLAG($FLAG);
-  my $tmp_score = $lot_score + $pilot_score;
+  my ($tmp_score,$lot_score,$pilot_score) = get_total_score($FLAG);
   next if($lot_score > $max_total_lot_score || $pilot_score > $max_total_pilot_score || $tmp_score >= $final_score{$FLAG});
   print("--$FLAG--lot_score=$lot_score pilot_score=$pilot_score  $E1-$FLAG-$R1<-->$E2-$FLAG-$R2\n");
 
@@ -481,9 +487,7 @@ sub move_same_recipe{
   $HANDLE_EF_COUNT{$E2}{$FLAG}[0] -= $ER_ASSIGN{$E2}{$FLAG}{$R2}[0];
   $HANDLE_EF_COUNT{$E2}{$FLAG}[1] -= $ER_ASSIGN{$E2}{$FLAG}{$R2}[1];
 
-  my $lot_score = get_total_lot_score_ON_FLAG($FLAG);
-  my $pilot_score = get_total_pilot_score_ON_FLAG($FLAG);
-  my $tmp_score = $lot_score + $pilot_score;
+  my ($tmp_score,$lot_score,$pilot_score) = get_total_score($FLAG);
   next if($lot_score > $max_total_lot_score || $pilot_score > $max_total_pilot_score || $tmp_score >= $final_score{$FLAG});
   print("--$FLAG--lot_score=$lot_score pilot_score=$pilot_score  $E2-$FLAG-$R2--->$E1-$FLAG-$R1\n");
 
@@ -519,9 +523,7 @@ sub move_diff_eqpid{
   $HANDLE_EF_COUNT{$E2}{$FLAG}[0] -= $ER_ASSIGN{$E2}{$FLAG}{$R2}[0];
   $HANDLE_EF_COUNT{$E2}{$FLAG}[1] -= $ER_ASSIGN{$E2}{$FLAG}{$R2}[1];
 
-  my $lot_score = get_total_lot_score_ON_FLAG($FLAG);
-  my $pilot_score = get_total_pilot_score_ON_FLAG($FLAG);
-  my $tmp_score = $lot_score + $pilot_score;
+  my ($tmp_score,$lot_score,$pilot_score) = get_total_score($FLAG);
   print("$E2-$FLAG-$R2 @{$ER_ASSIGN{$E2}{$FLAG}{$R2}}====>$E1-$FLAG-$R2\n\n");
   #print("--$FLAG--lot_score=$lot_score pilot_score=$pilot_score  $E2-$FLAG-$R2---->$E1-$FLAG\n");
   #next if($lot_score > $max_total_lot_score || $pilot_score > $max_total_pilot_score || $tmp_score > $final_score{$FLAG});
@@ -708,10 +710,8 @@ read_ER_FILE();
 
 for(my $f = 1; $f <= $OP_FLAG; $f++){
   print("====start optimize flag:$f==========\n");
-  my $lot_score = get_total_lot_score_ON_FLAG($f);
-  my $pilot_score = get_total_pilot_score_ON_FLAG($f);
-  $final_score{$f} = $lot_score+$pilot_score;
-  print("FINAL:$final_score{$f} FLAG:$f  lot_score=$lot_score pilot_score=$pilot_score\n");
+  ($final_score{$f},my $lot_score,my $pilot_score) = get_total_score($f);
+  print(">>>TOTAL_SCORE:$final_score{$f} FLAG:$f  lot_score=$lot_score pilot_score=$pilot_score\n");
   
   #get all eqpid on flag 1
   my @E_ARRAY;#for store flag1's eqpid
@@ -763,23 +763,21 @@ for(my $f = 1; $f <= $OP_FLAG; $f++){
   #print("lots:$lots\n");
 }
 
-my $lot_score = get_total_lot_score_ON_FLAG($OP_FLAG);
-my $pilot_score = get_total_pilot_score_ON_FLAG($OP_FLAG);
-$final_score{$OP_FLAG} = $lot_score+$pilot_score;
-print("FINAL:$final_score{$OP_FLAG} FLAG:$OP_FLAG lot_score=$lot_score pilot_score=$pilot_score\n");
+($final_score{$OP_FLAG},my $lot_score,my $pilot_score) = get_total_score($OP_FLAG);
+print(">>>TOTAL_SCORE:$final_score{$OP_FLAG} FLAG:$OP_FLAG lot_score=$lot_score pilot_score=$pilot_score\n");
 if($lot_score < $final_lot_good_core){
   $final_lot_good_core = $lot_score;
   $final_pilot_good_core = $pilot_score;
-  print("FLAG:get min\n");
+  print("FLAG:get one min\n");
   print_ER_ASSIGN();
   if($final_lot_good_core <= 100 && $final_pilot_good_core<=110){
-    print("BEST_CORE---FLAG:$OP_FLAG lot_score=$final_lot_good_core pilot_score=$final_pilot_good_core\n");
+    print(">>>OKAY_CORE---FLAG:$OP_FLAG lot_score=$final_lot_good_core pilot_score=$final_pilot_good_core\n");
     exit(0);
   }
 }
 
 if($if_exit == 1){
-  print("FINAL_GOOD_CORE---FLAG:$OP_FLAG lot_score=$final_lot_good_core pilot_score=$final_pilot_good_core\n");
+  print(">>>NOW_BEST_CORE:---FLAG:$OP_FLAG lot_score=$final_lot_good_core pilot_score=$final_pilot_good_core\n");
   exit(0);
 }else{
   goto LOOP;
