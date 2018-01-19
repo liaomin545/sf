@@ -2,19 +2,8 @@
 use strict;
 use Storable qw(dclone);
 ####################################
-my $INPUT_FILE= "../data/DUV.csv"; 
-my $LP_FILE = "LP.lp";
-#my $LP_SOLVE = 'cygdrive/d/ProgramFiles/LPSolve IDE/LpSolveIDE.exe';
-my $LP_SOLVE = '/cygdrive/d/workspace/lp_source/lp_solve_5.5/lp_solve/bin/ux64/lp_solve.exe';
-my $SOLUTION_TXT_FILE = "solution.txt";
-my $SOLUTION_CSV_FILE = "solution.csv";
+my $INPUT_FILE= "../data/DUV.csv";
 my $DEBUG_FILE = "debug.txt";
-########################################################
-#my $GOAL = "MIN_MAXTIME";
-#my $GOAL = "MAX_MINTIME";
-#my $GOAL = "MIN_GAP";		# not a good apporach
-#my $GOAL = "MIN_PILOTLIMITEQPIDFLAG";
-my $GOAL = "MIN_SUMDIF";	# SUMDIF = sum_EQPID max {TIME-AVE_TIME, 0} }
 my $DEBUG = 1;			# 0/1: to print debug info
 if ($DEBUG) {
 	open (FDEBUG, ">", $DEBUG_FILE) or die "Can't open $DEBUG_FILE";
@@ -24,15 +13,9 @@ if ($DEBUG) {
 my $CONST_A = 0;
 my $CONST_B = 1/25;
 my $FLAG_MAX = 6;
-         
-#my $MAX_TIME_LIMIT = 1000;	# can be adjusted, not used now
+
 my @AVE_TIME;			# FLAG -> ave for this flag
 my @AVE_TIME_ACC;		# FLAG -> ave for flag 1 to this flag
-my $PILOT_LIMIT_FLAG = 100;	# pilots of each flag, can be adjusted
-my $PILOT_LIMIT_EQPID_FLAG = 5; # pilots of each flag and each EQPID, can be adjusted
-my $PENALTY_PILOT_GT_3 = 0.1;
-my $PENALTY_PILOT_GT_4 = 10;
-my $BUFFER_SIZE = 5;		# if lot < AVE - BUFFER_SIZE, will assign IDLE
 ########################################################
 my %LOTID_def;		# LOTID -> 1
 my %EQPID_def;		# EQPID -> 1
@@ -147,6 +130,9 @@ sub read_INPUT {
 
 
 my $max_total_lot_score = 100;
+####################################
+#get the lot ave score
+####################################
 sub ave_lot_score {
 
 	my $AVE = $_[0];	# computed by (total lots from time=0 to now) / (number of machines)
@@ -169,6 +155,9 @@ sub ave_lot_score {
 }
 
 my $max_total_pilot_score = 110;
+####################################
+#get the pilot ave score
+####################################
 sub ave_pilot_score {
 
 	my $THRESHOLD = $_[0];	# assume 3, given by user
@@ -184,17 +173,22 @@ sub ave_pilot_score {
 	return 100;
 }
 
+
+########################################################
 my $ER_FILE="../data/eqpid_recipe.csv";
-#my $ER_FILE="./eqpid_recipe_lot_pilot.csv";
 my %ER_ASSIGN;		  # (EQPID, FLAG, RECIPE) -> [lot,pilot]
 my %EF_COUNT;		  # (EQPID, FLAG) -> [lots,pilots]
 my %HANDLE_ER_ASSIGN; # (EQPID, RECIPE, FLAG) -> [lot,pilot] deault should be %ER_ASSIGN's deep copy
 my %HANDLE_EF_COUNT;  # (EQPID, FLAG) -> [lots,pilots] deault should be %EF_COUNT's deep copy
-#my @EF_COUNT_STORE;   # store %EF_COUNT per ascending order with lots
+
 my $OP_FLAG = 6;
-#my $final_score;      #store the final total score(lot_score+pilot_score)
 my %final_score;#store the final total score(lot_score+pilot_score),key is flag
 my $switch_cnt = 0;   #recore switch count
+########################################################
+
+#############################################
+#read data into %ER_ASSIGN and %EF_COUNT
+#############################################
 sub read_ER_FILE{
   open(FIN, $ER_FILE) or die "Can't open $ER_FILE";
   my $header = <FIN>;	# skip header
@@ -216,15 +210,9 @@ sub read_ER_FILE{
     }
 
     $ER_ASSIGN{$EQPID}{$FLAG}{$RECIPE}=[$LOT,$PILOT];
-    #print("$line\n");
-    #print("--$LOT,$PILOT\n");
-    #print("$ER_ASSIGN{$EQPID}{$FLAG}{$RECIPE}[0]\n");
-    #print("==@{$ER_ASSIGN{$EQPID}{$FLAG}{$RECIPE}}\n");
 
     if(exists $EF_COUNT{$EQPID}{$FLAG}){
-      #print("+@{$EF_COUNT{$EQPID}{$FLAG}}---$LOT,$PILOT\n");
       $EF_COUNT{$EQPID}{$FLAG}=[$EF_COUNT{$EQPID}{$FLAG}[0]+$LOT,$EF_COUNT{$EQPID}{$FLAG}[1]+$PILOT];
-      #print("++@{$EF_COUNT{$EQPID}{$FLAG}}\n");}
     }else{
       $EF_COUNT{$EQPID}{$FLAG}=[$LOT,$PILOT];
     }
@@ -233,7 +221,7 @@ sub read_ER_FILE{
 }
 
 ##############################################
-#get the lot count on a flag
+#get the lot count on a flag from %HANDLE_EF_COUNT
 ##############################################
 sub get_lots_on_flag1{
   my $FLAG = $_[0];
@@ -249,6 +237,9 @@ sub get_lots_on_flag1{
   return $lot_cnt;
 }
 
+##############################################
+#get the lot count on a flag from %HANDLE_ER_ASSIGN
+##############################################
 sub get_lots_on_flag2{
   my $FLAG = $_[0];
   my $lot_cnt = 0;
@@ -265,7 +256,9 @@ sub get_lots_on_flag2{
   return $lot_cnt;
 }
 
-
+##############################################
+#get number of eqpid on a flag
+##############################################
 sub get_EQP_NUM_ON_FLAG{
   my $FLAG = $_[0];
   my $cnt = 0;
@@ -613,11 +606,8 @@ sub move_recipe_high_to_low{
     $R_ARRAY1[$f] = [];
     foreach my $R (keys %{$ER_ASSIGN{$E1}{$f}}){
       push(@{$R_ARRAY1[$f]},$R);
-      #print("---$f--@{$R_ARRAY1[$f]}\n");
     }
-    #print("+++$f++@{$R_ARRAY1[$f]}\n");
   }
-  #print("@R_ARRAY1\n");
 
   if(if_need_to_switch_on_eqpid_flag($E1,$FLAG)==0){
     return 0;
@@ -643,6 +633,9 @@ sub move_recipe_high_to_low{
   }
 }
 
+##########################################################
+#store %ER_ASSIGN to file
+##########################################################
 sub print_ER_ASSIGN{
   open (FOUT, ">eqpid_recipe_lot_pilot.csv") or die "Can't open eqpid_recipe_lot_pilot.csv";
   print FOUT "EQPID,RECIPE,FLAG,LOT,PILOT\n";
@@ -665,10 +658,14 @@ my $final_pilot_good_core = 1000;
 my $if_exit = 0;
 $SIG{TERM}=$SIG{INT}=\&get_crtl_c;
 
+##########################################################
+#handle ctrl+C or TERM signal to sure program can finish a full process
+##########################################################
 sub get_crtl_c{
   $if_exit = 1;
   print("!!!!!!!!!!!get ctrl-C signal!!!!!!!!!!!!\n");
 }
+
 
 LOOP:
 undef %ER_ASSIGN;
@@ -684,14 +681,13 @@ read_INPUT();
 read_ER_FILE();
 %HANDLE_EF_COUNT=%{dclone(\%EF_COUNT)};
 
-#foreach my $E (sort {$a cmp $b} keys %EF_COUNT){
-foreach my $E (keys %EF_COUNT){
-  foreach my $F (keys %{$EF_COUNT{$E}}){
-    if($F <= $OP_FLAG){
-      print("$E,$F-->@{$EF_COUNT{$E}{$F}}\n");
-    }
-  }
-}
+#foreach my $E (keys %EF_COUNT){
+#  foreach my $F (keys %{$EF_COUNT{$E}}){
+#    if($F <= $OP_FLAG){
+#      print("$E,$F-->@{$EF_COUNT{$E}{$F}}\n");
+#    }
+#  }
+#}
 
 
 #get all flag's eqp num
