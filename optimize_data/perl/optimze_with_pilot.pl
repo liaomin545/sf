@@ -712,8 +712,11 @@ read_ER_FILE();
 #print_eqp_num_and_ave_lot();
 
 %HANDLE_EF_COUNT=%{dclone(\%EF_COUNT)};
-($final_score{$OP_FLAG},my $tmp_lot_score,my $tmp_pilot_score) = get_total_score($OP_FLAG);
-print(">>>START_SCORE:$final_score{$OP_FLAG} FLAG:$OP_FLAG lot_score=$tmp_lot_score pilot_score=$tmp_pilot_score\n");
+for(my $f = 1; $f <= $OP_FLAG; $f++){
+  ($final_score{$f},my $tmp_lot_score,my $tmp_pilot_score) = get_total_score($f);
+  print(">>>START_SCORE:$final_score{$f} FLAG:$f lot_score=$tmp_lot_score pilot_score=$tmp_pilot_score\n");
+}
+#exit(0);
 
 for(my $f = 1; $f <= $OP_FLAG; $f++){
   print("====start optimize flag:$f==========\n");
@@ -770,7 +773,7 @@ for(my $f = 1; $f <= $OP_FLAG; $f++){
   #print("lots:$lots\n");
 }
 
-undef %HANDLE_EF_COUNT;^M
+undef %HANDLE_EF_COUNT;
 %HANDLE_EF_COUNT = %{dclone(\%EF_COUNT)};
 ($final_score{$OP_FLAG},my $lot_score,my $pilot_score) = get_total_score($OP_FLAG);
 print(">>>FINAL_SCORE:$final_score{$OP_FLAG} FLAG:$OP_FLAG lot_score=$lot_score pilot_score=$pilot_score\n");
