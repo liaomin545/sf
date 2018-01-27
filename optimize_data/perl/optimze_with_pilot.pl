@@ -693,6 +693,7 @@ sub print_eqp_num_and_ave_lot{
 my $final_lot_good_core = 1000;
 my $final_pilot_good_core = 1000;
 my $if_exit = 0;
+my $repeat_cnt = 0;
 $SIG{TERM}=$SIG{INT}=\&get_crtl_c;
 
 ##########################################################
@@ -709,6 +710,7 @@ undef %ER_ASSIGN;
 undef %EF_COUNT;
 $switch_cnt = 0;
 $switch_real_cnt = 0;
+$repeat_cnt = 0;
 read_INPUT();
 #print_USABLE();
 
@@ -780,6 +782,21 @@ for(my $f = 1; $f <= $OP_FLAG; $f++){
   
   #my $lots=get_lots_on_flag(1);
   #print("lots:$lots\n");
+
+  #try best to sure that every flag's lot score <= $max_total_lot_score
+  #but the flag's score may be modified later,because of move_recipe_high_to_low may do not use score as conditions.
+  (my $tmp_final_score,my $tmp_lot_score,my $tmp_pilot_score) = get_total_score($f);
+  print(">>>STATIC2_SCORE:$final_score{$f} FLAG:$f  lot_score=$tmp_lot_score pilot_score=$tmp_pilot_score\n");
+  if($tmp_lot_score>$max_total_lot_score){
+    $repeat_cnt++;
+    if($repeat_cnt<20){#the largest repeat is 20
+      $f--;
+      next;
+    }else{
+      print("!!!!!FLAG:$f No Way To Go!!!!!!!!\n\n");
+    }
+  }
+  $repeat_cnt = 0;
 }
 
 undef %HANDLE_EF_COUNT;
