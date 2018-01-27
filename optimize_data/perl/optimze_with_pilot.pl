@@ -770,6 +770,8 @@ for(my $f = 1; $f <= $OP_FLAG; $f++){
   #print("lots:$lots\n");
 }
 
+undef %HANDLE_EF_COUNT;^M
+%HANDLE_EF_COUNT = %{dclone(\%EF_COUNT)};
 ($final_score{$OP_FLAG},my $lot_score,my $pilot_score) = get_total_score($OP_FLAG);
 print(">>>FINAL_SCORE:$final_score{$OP_FLAG} FLAG:$OP_FLAG lot_score=$lot_score pilot_score=$pilot_score\n");
 if($lot_score < $final_lot_good_core){
