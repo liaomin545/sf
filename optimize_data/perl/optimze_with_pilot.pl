@@ -185,6 +185,7 @@ my %HANDLE_EF_COUNT;  # (EQPID, FLAG) -> [lots,pilots] deault should be %EF_COUN
 my $OP_FLAG = 6;
 my %final_score;#store the final total score(lot_score+pilot_score),key is flag
 my $switch_cnt = 0;   #recore switch count
+my $switch_real_cnt = 0;   #recore switch count
 ########################################################
 
 #############################################
@@ -398,6 +399,7 @@ sub switch_recipe_between_eqpid_on_flag{
       $final_score{$FLAG} = $tmp_score;
       %EF_COUNT = %{dclone(\%HANDLE_EF_COUNT)};
       %ER_ASSIGN = %{dclone(\%HANDLE_ER_ASSIGN)};
+      $switch_real_cnt++;
       
     }
   }
@@ -467,6 +469,7 @@ sub switch_recipe{
   $final_score{$FLAG} = $tmp_score;
   %EF_COUNT = %{dclone(\%HANDLE_EF_COUNT)};
   %ER_ASSIGN = %{dclone(\%HANDLE_ER_ASSIGN)};
+  $switch_real_cnt++;
 }
 
 ##########################################################
@@ -503,6 +506,7 @@ sub move_same_recipe{
   $final_score{$FLAG} = $tmp_score;
   %EF_COUNT = %{dclone(\%HANDLE_EF_COUNT)};
   %ER_ASSIGN = %{dclone(\%HANDLE_ER_ASSIGN)};
+  $switch_real_cnt++;
 }
 
 ##########################################################
@@ -541,6 +545,7 @@ sub move_diff_eqpid{
   $final_score{$FLAG} = $tmp_score;
   %EF_COUNT = %{dclone(\%HANDLE_EF_COUNT)};
   %ER_ASSIGN = %{dclone(\%HANDLE_ER_ASSIGN)};
+  $switch_real_cnt++;
 }
 
 ##########################################################
@@ -703,6 +708,7 @@ LOOP:
 undef %ER_ASSIGN;
 undef %EF_COUNT;
 $switch_cnt = 0;
+$switch_real_cnt = 0;
 read_INPUT();
 #print_USABLE();
 
@@ -747,7 +753,7 @@ for(my $f = 1; $f <= $OP_FLAG; $f++){
       $a_cnt++;
     }
   }
-  print("E_sg:$a_cnt  R_sg:$switch_cnt\n\n");
+  print("E_sg:$a_cnt  R_sg:$switch_cnt R_real_sg:$switch_real_cnt\n\n");
   
   
   
@@ -770,7 +776,7 @@ for(my $f = 1; $f <= $OP_FLAG; $f++){
       $a_cnt++;
     }
   }
-  print("E_sg:$a_cnt  R_sg:$switch_cnt\n\n");
+  print("E_sg:$a_cnt  R_sg:$switch_cnt R_real_sg:$switch_real_cnt\n\n");
   
   #my $lots=get_lots_on_flag(1);
   #print("lots:$lots\n");
