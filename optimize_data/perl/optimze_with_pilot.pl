@@ -13,6 +13,7 @@ if ($DEBUG) {
 my $CONST_A = 0;
 my $CONST_B = 1/25;
 my $FLAG_MAX = 6;
+my $EQP_CNT = 0;
 
 my @AVE_TIME;			# FLAG -> ave for this flag
 my @AVE_TIME_ACC;		# FLAG -> ave for flag 1 to this flag
@@ -287,7 +288,7 @@ sub get_ave_lot_with_flag{
       }
     }
   }
-  return $lot_cnt/get_EQP_NUM_ON_FLAG($FLAG);
+  return $lot_cnt/$EQP_CNT;#get_EQP_NUM_ON_FLAG($FLAG);
 }
 
 ##############################################
@@ -710,6 +711,8 @@ read_ER_FILE();
 #print_EF_COUNT();
 
 #print_eqp_num_and_ave_lot();
+
+$EQP_CNT = keys(%EF_COUNT);
 
 %HANDLE_EF_COUNT=%{dclone(\%EF_COUNT)};
 for(my $f = 1; $f <= $OP_FLAG; $f++){
