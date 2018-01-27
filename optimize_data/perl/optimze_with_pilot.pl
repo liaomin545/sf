@@ -792,16 +792,26 @@ if($lot_score < $final_lot_good_core){
   print("FLAG:get one min\n");
   print_ER_ASSIGN();
   if($final_lot_good_core <= 100 && $final_pilot_good_core<=110){
-    print(">>>OKAY_CORE---FLAG:$OP_FLAG lot_score=$final_lot_good_core pilot_score=$final_pilot_good_core\n");
-    exit(0);
+    print(">>>OKAY_CORE---FLAG:$OP_FLAG lot_score=$final_lot_good_core pilot_score=$final_pilot_good_core\n\n");
+    goto END;
   }
 }
 
 if($if_exit == 1){
-  print(">>>NOW_BEST_CORE:---FLAG:$OP_FLAG lot_score=$final_lot_good_core pilot_score=$final_pilot_good_core\n");
-  exit(0);
+  print(">>>NOW_BEST_CORE:---FLAG:$OP_FLAG lot_score=$final_lot_good_core pilot_score=$final_pilot_good_core\n\n");
+  goto END;
 }else{
   goto LOOP;
 }
 
-
+END:
+undef %ER_ASSIGN;
+undef %EF_COUNT;
+$ER_FILE="./eqpid_recipe_lot_pilot.csv";
+read_ER_FILE();
+%HANDLE_EF_COUNT=%{dclone(\%EF_COUNT)};
+for(my $f = 1; $f <= $OP_FLAG; $f++){
+  ($final_score{$f},my $tmp_lot_score,my $tmp_pilot_score) = get_total_score($f);
+  print(">>>RESULT_SCORE:$final_score{$f} FLAG:$f lot_score=$tmp_lot_score pilot_score=$tmp_pilot_score\n");
+}
+exit(0);
