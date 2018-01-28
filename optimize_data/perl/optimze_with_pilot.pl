@@ -690,10 +690,24 @@ sub print_eqp_num_and_ave_lot{
   }
 }
 
+#double check lot score is okay
+sub double_check_lot_score{
+  my $result = 1;
+  for(my $f = 1; $f <= $OP_FLAG; $f++){
+    (my $tmp_final_score,my $tmp_lot_score,my $tmp_pilot_score) = get_total_score($f);
+    $result=0 if($tmp_lot_score > $max_total_lot_score);
+  }
+  return $result;
+}
+
+#perl optimze_with_pilot.pl:endless loop to run, stop when get crtl+c signal
+#perl optimze_with_pilot.pl -f:endless loop to run,but stop when get crtl+c signal or get a okay result on lot score by double_check_lot_score
 my $final_lot_good_core = 1000;
 my $final_pilot_good_core = 1000;
 my $if_exit = 0;
 my $repeat_cnt = 0;
+my $lot_score_okay = 0;#0 is not okay
+my $fast = $ARGV[0];#-f: it mean that program end once get the okay result
 $SIG{TERM}=$SIG{INT}=\&get_crtl_c;
 
 ##########################################################
@@ -803,7 +817,10 @@ undef %HANDLE_EF_COUNT;
 %HANDLE_EF_COUNT = %{dclone(\%EF_COUNT)};
 ($final_score{$OP_FLAG},my $lot_score,my $pilot_score) = get_total_score($OP_FLAG);
 print(">>>FINAL_SCORE:$final_score{$OP_FLAG} FLAG:$OP_FLAG lot_score=$lot_score pilot_score=$pilot_score\n");
-if($lot_score < $final_lot_good_core){
+
+$lot_score_okay=double_check_lot_score() if($fast eq '-f');
+
+if($lot_score_okay==1 || $lot_score < $final_lot_good_core){
   $final_lot_good_core = $lot_score;
   $final_pilot_good_core = $pilot_score;
   print("FLAG:get one min\n");
@@ -814,7 +831,7 @@ if($lot_score < $final_lot_good_core){
   }
 }
 
-if($if_exit == 1){
+if($lot_score_okay==1 || $if_exit == 1){
   print(">>>NOW_BEST_CORE:---FLAG:$OP_FLAG lot_score=$final_lot_good_core pilot_score=$final_pilot_good_core\n\n");
   goto END;
 }else{
@@ -832,3 +849,4 @@ for(my $f = 1; $f <= $OP_FLAG; $f++){
   print(">>>RESULT_SCORE:$final_score{$f} FLAG:$f lot_score=$tmp_lot_score pilot_score=$tmp_pilot_score\n");
 }
 exit(0);
+
