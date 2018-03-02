@@ -140,7 +140,7 @@ sub read_INPUT {
 			}
 			next;
 		}
-		$RECIPE =~ s/-/~/g;	# replace "-" by "~" for LP solver
+		$RECIPE =~ s/-//g;	# replace "-" by "~" for LP solver
 
 
 		$EQPID_def{$EQPID} = 1;
