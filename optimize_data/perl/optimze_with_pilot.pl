@@ -547,8 +547,8 @@ sub move_diff_eqpid{
   my ($tmp_score,$lot_score,$pilot_score) = get_total_score($OP_FLAG);
   print("$E2-$FLAG-$R2 @{$ER_ASSIGN{$E2}{$FLAG}{$R2}}====>$E1-$FLAG-$R2\n\n");
   #print("--$FLAG--lot_score=$lot_score pilot_score=$pilot_score  $E2-$FLAG-$R2---->$E1-$FLAG\n");
-  next if($tmp_score > $final_score{$FLAG}  || $lot_score > $max_total_lot_score || $pilot_score > $max_total_pilot_score);
-  print("--$FLAG--lot_score=$lot_score pilot_score=$pilot_score  $E2-$FLAG-$R2---->$E1-$FLAG\n");
+  next if($tmp_score > $final_score{$OP_FLAG}  || $lot_score > $max_total_lot_score || $pilot_score > $max_total_pilot_score);
+  print("--$OP_FLAG--lot_score=$lot_score pilot_score=$pilot_score  $E2-$FLAG-$R2---->$E1-$FLAG\n");
 
   #changed and deleted recipe from eqpid&flag as reach the requirement
   undef %HANDLE_ER_ASSIGN;
