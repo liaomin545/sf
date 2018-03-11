@@ -51,7 +51,7 @@ sub read_INPUT {
 		if (grep (/^X/, $RECIPE)) {	# skip X lots
 			next;
 		}
-		$RECIPE =~ s/-//g;	# remove - for LP solver
+		#$RECIPE =~ s/-//g;	# remove - for LP solver
 
 		my $WAFER = $fields[5];
 		#my $lot = $CONST_A + $CONST_B * $WAFER;
@@ -176,7 +176,7 @@ sub ave_pilot_score {
 
 
 ########################################################
-my $ER_FILE="../data/eqpid_recipe.csv";
+my $ER_FILE="../data/solution_eqpid_recipe.csv";
 my %ER_ASSIGN;		  # (EQPID, FLAG, RECIPE) -> [lot,pilot]
 my %EF_COUNT;		  # (EQPID, FLAG) -> [lots,pilots]
 my %E_COUNT;		  # (EQPID) -> [lots,pilots] ,contain all flag
@@ -208,6 +208,7 @@ sub read_ER_FILE{
     my $FLAG = $fields[2];
     my $LOT = $fields[3];
     my $PILOT = 0;
+    next if($RECIPE eq '');#remove ivalid line
     if($fields[4] =~ /^\s*pilot\s*$/i){
       $PILOT = 1;
     }
