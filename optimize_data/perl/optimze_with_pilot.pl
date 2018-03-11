@@ -558,7 +558,7 @@ sub move_diff_eqpid{
   $HANDLE_EF_COUNT{$E2}{$FLAG}[1] -= $ER_ASSIGN{$E2}{$FLAG}{$R2}[1];
 
   my ($tmp_score,$lot_score,$pilot_score) = get_total_score($OP_FLAG);
-  print("$E2-$FLAG-$R2 @{$ER_ASSIGN{$E2}{$FLAG}{$R2}}====>$E1-$FLAG-$R2\n\n");
+  #print("$E2-$FLAG-$R2 @{$ER_ASSIGN{$E2}{$FLAG}{$R2}}====>$E1-$FLAG-$R2\n\n");
   #print("--$FLAG--lot_score=$lot_score pilot_score=$pilot_score  $E2-$FLAG-$R2---->$E1-$FLAG\n");
   if($tmp_score > $final_score{$OP_FLAG}  || $lot_score > $max_total_lot_score || $pilot_score > $max_total_pilot_score){
     undef %HANDLE_EF_COUNT;
