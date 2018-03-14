@@ -168,7 +168,7 @@ sub ave_pilot_score {
 		return 0;
 	}
 
-	if ($THRESHOLD == $ASSIGNED+1){
+	if ($THRESHOLD == $ASSIGNED-1){
 		return 5;
 	}
 	return 100;
