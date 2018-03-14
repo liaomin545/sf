@@ -685,22 +685,34 @@ sub move_recipe_high_to_low{
 
 ##########################################################
 #store %ER_ASSIGN to file
+#eqpid_recipe_lot_pilot.csv:just store %ER_ASSIGN
+#solution_eqpid_recipe_lot_pilot.csv:base on eqpid_recipe_lot_pilot.csv and add count total of lot and pilot on E
 ##########################################################
 sub print_ER_ASSIGN{
   open (FOUT, ">eqpid_recipe_lot_pilot.csv") or die "Can't open eqpid_recipe_lot_pilot.csv";
+  open (FSOUT, ">solution_eqpid_recipe_lot_pilot.csv") or die "Can't open solution_eqpid_recipe_lot_pilot.csv";
   print FOUT "EQPID,RECIPE,FLAG,LOT,PILOT\n";
+  print FSOUT "EQPID,RECIPE,FLAG,LOT,PILOT\n";
   foreach my $E (keys %ER_ASSIGN){
+    my $total_lot=0;
+    my $total_pilot=0;
     foreach my $F (keys %{$ER_ASSIGN{$E}}){
       foreach my $R (keys %{$ER_ASSIGN{$E}{$F}}){
         if($ER_ASSIGN{$E}{$F}{$R}[1] eq 1){
-          print FOUT "$E,$R,$F,$ER_ASSIGN{$E}{$F}{$R}[0],pilot\n"
+          print FOUT "$E,$R,$F,$ER_ASSIGN{$E}{$F}{$R}[0],pilot\n";
+          print FSOUT "$E,$R,$F,$ER_ASSIGN{$E}{$F}{$R}[0],pilot\n";
+          $total_pilot++;
         }else{
-          print FOUT "$E,$R,$F,$ER_ASSIGN{$E}{$F}{$R}[0],\n"
+          print FOUT "$E,$R,$F,$ER_ASSIGN{$E}{$F}{$R}[0],\n";
+          print FSOUT "$E,$R,$F,$ER_ASSIGN{$E}{$F}{$R}[0],\n";
         }
+        $total_lot+=$ER_ASSIGN{$E}{$F}{$R}[0];
       }
     }
+    print FSOUT "$E,,,$total_lot,$total_pilot\n\n";
   }
   close(FOUT);
+  close(FSOUT);
 }
 
 #just print %USABLE
