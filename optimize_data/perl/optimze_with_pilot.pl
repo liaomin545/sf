@@ -177,6 +177,8 @@ sub ave_pilot_score {
 
 ########################################################
 my $ER_FILE="../data/solution_eqpid_recipe.csv";
+my $RESULT_FILE="./eqpid_recipe_lot_pilot.csv";
+my $RESULT_SOLUTION_FILE="./solution_eqpid_recipe_lot_pilot.csv";#base on $RESULT_FILE and add count total of lot and pilot on E
 my %ER_ASSIGN;		  # (EQPID, FLAG, RECIPE) -> [lot,pilot]
 my %EF_COUNT;		  # (EQPID, FLAG) -> [lots,pilots]
 my %E_COUNT;		  # (EQPID) -> [lots,pilots] ,contain all flag
@@ -689,8 +691,8 @@ sub move_recipe_high_to_low{
 #solution_eqpid_recipe_lot_pilot.csv:base on eqpid_recipe_lot_pilot.csv and add count total of lot and pilot on E
 ##########################################################
 sub print_ER_ASSIGN{
-  open (FOUT, ">eqpid_recipe_lot_pilot.csv") or die "Can't open eqpid_recipe_lot_pilot.csv";
-  open (FSOUT, ">solution_eqpid_recipe_lot_pilot.csv") or die "Can't open solution_eqpid_recipe_lot_pilot.csv";
+  open (FOUT, ">$RESULT_FILE") or die "Can't open $RESULT_FILE";
+  open (FSOUT, ">$RESULT_SOLUTION_FILE") or die "Can't open $RESULT_SOLUTION_FILE";
   print FOUT "EQPID,RECIPE,FLAG,LOT,PILOT\n";
   print FSOUT "EQPID,RECIPE,FLAG,LOT,PILOT\n";
   foreach my $E (keys %ER_ASSIGN){
@@ -900,7 +902,7 @@ if($lot_score_okay==1 || $if_exit == 1){
 END:
 undef %ER_ASSIGN;
 undef %EF_COUNT;
-$ER_FILE="./eqpid_recipe_lot_pilot.csv";
+$ER_FILE=$RESULT_FILE;
 read_ER_FILE();
 %HANDLE_EF_COUNT=%{dclone(\%EF_COUNT)};
 for(my $f = 1; $f <= $OP_FLAG; $f++){
