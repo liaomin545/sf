@@ -469,10 +469,15 @@ sub switch_recipe{
   undef %HANDLE_EF_COUNT;
   %HANDLE_EF_COUNT = %{dclone(\%EF_COUNT)};
 
-  $HANDLE_EF_COUNT{$E1}{$FLAG1}[0] = $HANDLE_EF_COUNT{$E1}{$FLAG1}[0]-$ER_ASSIGN{$E1}{$FLAG1}{$R1}[0]+$ER_ASSIGN{$E2}{$FLAG2}{$R2}[0];
-  $HANDLE_EF_COUNT{$E1}{$FLAG1}[1] = $HANDLE_EF_COUNT{$E1}{$FLAG1}[1]-$ER_ASSIGN{$E1}{$FLAG1}{$R1}[1]+($USABLE{$E1}{$R2} eq "YES"?0:1);
-  $HANDLE_EF_COUNT{$E2}{$FLAG2}[0] = $HANDLE_EF_COUNT{$E2}{$FLAG2}[0]-$ER_ASSIGN{$E2}{$FLAG2}{$R2}[0]+$ER_ASSIGN{$E1}{$FLAG1}{$R1}[0];
-  $HANDLE_EF_COUNT{$E2}{$FLAG2}[1] = $HANDLE_EF_COUNT{$E2}{$FLAG2}[1]-$ER_ASSIGN{$E2}{$FLAG2}{$R2}[1]+($USABLE{$E2}{$R1} eq "YES"?0:1);
+  $HANDLE_EF_COUNT{$E1}{$FLAG1}[0] -= $ER_ASSIGN{$E1}{$FLAG1}{$R1}[0];
+  $HANDLE_EF_COUNT{$E1}{$FLAG1}[1] -= $ER_ASSIGN{$E1}{$FLAG1}{$R1}[1];
+  $HANDLE_EF_COUNT{$E2}{$FLAG2}[0] -= $ER_ASSIGN{$E2}{$FLAG2}{$R2}[0];
+  $HANDLE_EF_COUNT{$E2}{$FLAG2}[1] -= $ER_ASSIGN{$E2}{$FLAG2}{$R2}[1];
+
+  $HANDLE_EF_COUNT{$E1}{$FLAG2}[0] += $ER_ASSIGN{$E2}{$FLAG2}{$R2}[0];
+  $HANDLE_EF_COUNT{$E1}{$FLAG2}[1] += ($USABLE{$E1}{$R2} eq "YES"?0:1);
+  $HANDLE_EF_COUNT{$E2}{$FLAG1}[0] += $ER_ASSIGN{$E1}{$FLAG1}{$R1}[0];
+  $HANDLE_EF_COUNT{$E2}{$FLAG1}[1] += ($USABLE{$E2}{$R1} eq "YES"?0:1);
 
   my ($tmp_score,$lot_score,$pilot_score) = get_total_score($OP_FLAG);
   if($tmp_score >= $final_score{$OP_FLAG} || $lot_score > $max_total_lot_score || $pilot_score > $max_total_pilot_score){
